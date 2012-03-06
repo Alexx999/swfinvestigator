@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:NavigatorContent xmlns:mx="library://ns.adobe.com/flex/mx"
+		   xmlns:fx="http://ns.adobe.com/mxml/2009"
+		   xmlns:s="library://ns.adobe.com/flex/spark" width="100%" height="100%">
+	<fx:Script>
+		<![CDATA[
+			/****************************************************************************
+			 * ADOBE SYSTEMS INCORPORATED
+			 * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+			 * All Rights Reserved.
+			 *  
+			 * NOTICE: Adobe permits you to use, modify, and distribute this file
+			 * in accordance with the terms of the license agreement accompanying it.
+			 * ****************************************************************************/
+			
+			import inspectors.IASInspector;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.events.ModuleEvent;
+			
+			import spark.components.Button;
+			import spark.modules.ModuleLoader;
+
+			
+			private var sUrl:String;
+			private var avm2:Boolean;
+			private var remapPort:int;
+			private var dUserAgent:String;
+			private var modLoader:ModuleLoader;
+			private var reloadModule:Boolean;
+			private var loadButton:Button;
+			
+			/**
+			 * This wrapper tab loads the appropriate inspector based on the information provided here.
+			 * 
+			 * @param swfU The String containing the SWF URL
+			 * @param rPort An int representing the remote port to use for sandbox remapping
+			 * @param a2 A boolean stating whether the SWF is AVM2
+			 * @param force Used by parent to indicate a new SWF was loaded
+			 */ 
+			public function initTab(swfU:String,rPort:int,uAgent:String,a2:Boolean,force:Boolean=false):void {
+				this.sUrl = swfU;
+				this.avm2 = a2;
+				this.remapPort = rPort;
+				this.dUserAgent = uAgent;
+				
+				if (loadButton == null) {
+					loadButton = new Button();
+					loadButton.label = "Load Viewer";
+					loadButton.x = 335;
+					loadButton.y = 255;
+					loadButton.addEventListener(MouseEvent.CLICK,loadModule);
+				}
+				
+				if (force && !this.visible) {
+					this.reloadModule = true;
+					return;
+				} else if (!force && !this.reloadModule) {
+					return;
+				}
+				
+				if (this.warning.stage != null) {
+					this.removeElement(this.warning);
+				}
+						
+				this.reloadModule = false;
+				
+				if (this.modLoader != null) {
+					this.modLoader.unloadModule();
+					this.removeElement(this.modLoader);
+				}
+				
+				this.addElement(this.loadButton);
+
+			}
+			
+			/**
+			 * @private
+			 * Called by the loadButton to the load the movie
+			 * 
+			 * @param e The mouse click event
+			 */
+			private function loadModule(e:MouseEvent):void {
+				this.removeElement(this.loadButton);
+				this.modLoader = new ModuleLoader();
+				this.modLoader.percentWidth = 100;
+				this.modLoader.percentHeight = 100;
+				this.modLoader.addEventListener(FlexEvent.INITIALIZE,loadMod);
+				this.addElement(this.modLoader);
+			}
+			
+			/**
+			 * @private
+			 * Called by initTab to load the appropriate module based on the location and type of SWF.
+			 * 
+			 * @param e The ModuleEvent from the modLoader in initTab.
+			 */
+			private function loadMod(e:Event):void {
+				if (this.avm2) {
+					if (this.sUrl.indexOf("http") == 0) {
+						this.modLoader.url = "app:/inspectors/AS3Inspector.swf";
+					} else {
+						this.modLoader.url = "app:/inspectors/AS3LocalInspector.swf";
+					}
+				} else {
+					this.modLoader.url = "app:/inspectors/AS2Inspector.swf";
+				}
+				
+				this.modLoader.addEventListener(ModuleEvent.READY,startMod);
+				this.modLoader.loadModule();
+			}
+			
+			/**
+			 * @private
+			 * Called once the modLoader from loadMod is initialized to set up the appropriate inspector
+			 * 
+			 * @param e The ModuleEventReady event from the loader in initTab. 
+			 */
+			private function startMod (e:ModuleEvent):void {
+				var asInspector:IASInspector = this.modLoader.child as IASInspector;
+				asInspector.initTab(this.sUrl,this.remapPort,this.dUserAgent);
+			}
+		]]>
+	</fx:Script>
+	<s:Label id="warning" x="310" y="255" text="No SWFs currently loaded"/>
+</s:NavigatorContent>

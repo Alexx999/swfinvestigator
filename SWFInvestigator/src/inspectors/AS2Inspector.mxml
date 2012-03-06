@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:mx="library://ns.adobe.com/flex/mx"
+		   xmlns:fx="http://ns.adobe.com/mxml/2009"
+		   xmlns:s="library://ns.adobe.com/flex/spark"
+		   implements="inspectors.IASInspector" width="723" height="579">
+	<fx:Script>
+		<![CDATA[
+			/****************************************************************************
+			 * ADOBE SYSTEMS INCORPORATED
+			 * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+			 * All Rights Reserved.
+			 *  
+			 * NOTICE: Adobe permits you to use, modify, and distribute this file
+			 * in accordance with the terms of the license agreement accompanying it.
+			 * ****************************************************************************/
+		
+			import mx.collections.ArrayCollection;
+
+			//For AS2Viewer
+            [Bindable]
+            public var as2GlobalsCol:ArrayCollection;
+
+            [Bindable]
+            public var as2VariablesCol:ArrayCollection;
+			
+			private var swfUrl:String;
+			private var flashVars:String;
+			
+			private var remapPort:int;
+			private var dUserAgent:String;
+		    
+		    /**
+		     * @private
+		     * Clears any existing information from the collections
+		     */
+		    private function clearArrays():void {
+		    	this.as2GlobalsCol.removeAll();
+		    	this.as2VariablesCol.removeAll();
+		    	if (this.as2output != null) {
+					this.as2output.text = "";
+		    	}
+		    }
+		    
+		    /**
+		     * @private
+		     * Reaches into the HTML page to retrieve the selected variable from the SWF
+		     * 
+		     * The value for the variable is written to the text box.
+		     * 
+		     * @param variable A string representing the type of variable to fetch.
+		     */
+		    private function as2fetchVar(variable:String):void {
+		    	if (variable == "global") {
+		    		if (this.as2globalList.selectedItem != null) {
+		    			this.as2output.text = this.as2htmlLoader.htmlLoader.window.fetchVariable(this.as2globalList.selectedItem.toString());
+		    		} else {
+		    			this.as2output.text = "Error: Please select a global variable!";
+		    			return;
+		    		}
+		    	} else if (variable == "Variables") {
+		    		if (this.as2VariablesList.selectedItem != null) {
+		    			this.as2output.text = this.as2htmlLoader.htmlLoader.window.fetchVariable(this.as2VariablesList.selectedItem.toString());
+		    		} else {
+		    			this.as2output.text = "Error: Please select a variable!";
+		    			return;
+		    		}
+		    	} else if (variable == "custom") {
+		  			if (this.as2custom.text.length > 0) {
+		    			this.as2output.text = this.as2htmlLoader.htmlLoader.window.fetchVariable(this.as2custom.text);
+		    		} else {
+		    			this.as2output.text = "Error: Please enter a variable!";
+		    			return;
+		    		}
+		    	}
+		    }
+		    
+		    /**
+		     * @private
+		     * Called by the SWFIntruder via the HTML proxy to populate the Collections with variables
+		     * 
+		     * @param command The type of variable as a string ("_global", "Variables")
+		     * @param args The name of the variable as a string
+		     */
+		    private function initArray(command:String, args:String):void {
+		    	if (command.indexOf("_global") == 0 && this.as2GlobalsCol.contains(args) == false) {
+		    		this.as2GlobalsCol.addItem(args);
+		    	} else if (command.indexOf("Variables") == 0 && this.as2VariablesCol.contains(args) == false) {
+		    		this.as2VariablesCol.addItem(args);
+		    	} else if (command.indexOf("Variables") != 0 && command.indexOf("_global") != 0) {
+		    		this.as2output.text = "Caught Unexpected FSCommand --- command: " + command + " --- args: " + args;
+		    	} 
+		    }
+		    
+		    /**
+		     * @private
+		     * Once the loadPage() page has loaded, set up the JS variables with the appropriate information.
+		     * 
+		     * @param e The event from the swfIntruder.html being successfully loaded.
+		     */ 
+		    private function initAS2Intruder(e:Event):void {
+		    	var domainInfo:Object = this.getDomain();
+				if (e.currentTarget.window.swfData != null) {
+					
+				   var swfLoc:String = "getVarsWrapper.html?getVars#swfurl="+ this.swfUrl;
+				   if (this.flashVars && this.flashVars.length > 0) {
+				      swfLoc += "&" + this.flashVars;
+				   }
+				   e.currentTarget.window.swfData.SWFLocation = swfLoc;
+				   
+				   var rPort:String = this.remapPort.toString();
+				   if (domainInfo.port != rPort) {
+				  	 e.currentTarget.window.swfData.sandboxRoot = domainInfo.protocol + domainInfo.domain + ":" + rPort.toString();
+				   } else {
+				   	 e.currentTarget.window.swfData.sandboxRoot = domainInfo.protocol + domainInfo.domain + ":9990";
+				   }
+				   
+				   e.currentTarget.window.swfData.documentRoot = "app-storage:/inspectors/";
+				   e.currentTarget.window.swfData.initArray = initArray;
+				   e.currentTarget.window.writeLSOMap();
+				}
+			}
+		    
+		    /**
+		     * Initializes this AS2Inspector tab using information passed into the function.
+		     * 
+		     * @param sURL The string containing the SWFUrl to inspector
+		     * @param rPort The integer containing the port number to use in sandbox remapping.
+			 * @param uAgent The HTTP User Agent to use in the request
+		     */ 
+		    public function initTab(sUrl:String,rPort:int,uAgent:String):void {
+		    	this.remapPort = rPort;
+		    	this.swfUrl = sUrl;
+		    	this.dUserAgent = uAgent;
+		    	
+		    	if (this.as2GlobalsCol == null) {
+		    		//Init AS2Viewer list
+					this.as2GlobalsCol = new ArrayCollection(new Array());
+					this.as2VariablesCol= new ArrayCollection(new Array());		
+		    	}
+		    	
+				if (this.as2htmlLoader != null) {
+					loadPage();
+				}
+				this.clearArrays();
+		    }
+		    
+		    /**
+		    * Returns an object containing the domain, protocol and port from the swfURL
+		    * 
+		    * @return The domainInfo object that contains the URL properties.
+		    */
+		    private function getDomain():Object {
+				var domainInfo:Object = new Object;
+				domainInfo.domain = "";
+				domainInfo.protocol = "";
+				domainInfo.port = this.remapPort;
+				
+				if (this.swfUrl == null) { return(domainInfo); }
+				
+				if (this.swfUrl.indexOf("http://") == 0) {
+					domainInfo.protocol = "http://";
+		    		domainInfo.domain = this.swfUrl.substring(7,this.swfUrl.indexOf("/",7));
+		    	} else if (this.swfUrl.indexOf("https://") == 0) {
+		    		domainInfo.protocol = "https://";
+		    		domainInfo.domain = this.swfUrl.substring(8,this.swfUrl.indexOf("/",8));
+		    	}
+		    	
+		    	if (domainInfo.domain.indexOf(":") > 0) {
+		    		var temp:Array = domainInfo.domain.split(":");
+		    		domainInfo.domain = temp[0];
+		    		domainInfo.port = temp[1];
+		    	}
+		    	
+		    	return (domainInfo)
+			}
+			
+			/**
+			 * @private
+			 * Loads the trusted HTML swfIntruder.html wrapper.
+			 */
+			private function loadPage():void {
+				this.as2htmlLoader.htmlLoader.addEventListener(Event.COMPLETE,initAS2Intruder);
+				//this.as2htmlLoader.horizontalScrollPolicy="off";
+				//this.as2htmlLoader.verticalScrollPolicy="off";
+				this.as2htmlLoader.userAgent = this.dUserAgent;
+				this.as2htmlLoader.htmlLoader.load(new URLRequest("app:/inspectors/swfIntruder.html"));				
+			}
+			
+			/**
+			 * @private
+			 * Manually reloads the HTML container with new FlashVars from the user.
+			 */
+			private function updateFlashVars():void {
+				this.flashVars = this.flashVarsBox.text;
+				this.initTab(this.swfUrl,this.remapPort,this.dUserAgent);
+			}
+		]]>
+	</fx:Script>
+	<s:Label x="238" y="8" text="Display"/>
+	<mx:HTML x="10" y="34" width="500" height="372" id="as2htmlLoader" initialize="loadPage()"/>
+	<s:Label x="546" y="17" text="global"/>
+	<s:List x="546" y="34" id="as2globalList" dataProvider="{this.as2GlobalsCol}" click="as2fetchVar('global')" width="158"/>
+	<s:Label x="546" y="174" text="Variables"/>
+	<s:List id="as2VariablesList" x="546" y="194" width="158" height="182"
+			click="as2fetchVar('Variables')" dataProvider="{this.as2VariablesCol}"
+			toolTip="Click a variable to see information in the Output text area"/>
+	<s:Label x="546" y="397" text="Fetch Variable" width="158"/>
+	<s:TextInput id="as2custom" x="544" y="414" width="160"/>
+	<s:Button x="544" y="444" label="Retrieve" click="as2fetchVar('custom')"/>
+	<s:Label x="10" y="423" text="Output"/>
+	<s:TextArea x="10" y="443" width="500" height="123" id="as2output"
+				toolTip="The results from the action"/>
+	<s:Label x="544" y="495" text="Update FlashVars"/>
+	<s:TextInput id="flashVarsBox" x="544" y="512" width="160" editable="true"
+				 toolTip="This allows you to change the FlashVars provided to the SWF: foo=1&amp;bar=2"/>
+	<s:Button x="544" y="543" label="Update" click="updateFlashVars()"/>
+</s:Module>

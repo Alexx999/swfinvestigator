@@ -1,0 +1,38 @@
+<HTML>
+ <!-- &copy; 2009 Adobe Systems Incorporated. All rights reserved.  -->
+ <HEAD>
+   <SCRIPT type="text/javascript">
+    //Create postMessage listener
+	var eventMethod = window.addEventListener ? "addEventListener" : "attachEvent";
+	var eventRef = window[eventMethod];
+	var messageEvent = eventMethod == "attachEvent" ? "onmessage" : "message";
+
+	//Listen to message from child window
+	eventRef(messageEvent,function(e) {parent.postMessage("ping","*"); } );
+	
+	if(typeof childSandboxBridge=='undefined') {
+		childSandboxBridge={};
+	}
+		
+	function rewriteDiv(bI) {
+		viewerWrapper.innerHTML = '<iframe id="viewer" src="' + bI.remapDomain + '/viewerWrapper.html" width="100%" height="100%"></iframe>';
+		var htmlString = "<object id='viewer' classid='clsid:D27CDB6E-AE6D-11cf-96B8-444553540000' codebase='http://download.adobe.com/pub/shockwave/cabs/flash/swflash.cab#version=9,0,0,0' height='300' width='500'>";
+		htmlString += "<param name='src' value='" + bI.src + "'/>";
+		htmlString += "<param name='allowScriptAccess' value='" + bI.allowScriptAccess + "'/>";
+		htmlString += "<param name='allowNetworking' value='" + bI.allowNetworking + "'/>";
+		htmlString += "<param name='wmode' value='opaque'/>";
+		htmlString += "<param name='FlashVars' value='" + bI.flashVars + "'/>";
+		htmlString += "<embed name='viewer' wmode='opaque' pluginspage='/go/getflashplayer' src='" + bI.src + "' height='80%' width='80%' allowScriptAccess='" + bI.allowScriptAccess + "' allowNetworking='" + bI.allowNetworking + "' FlashVars='" + bI.flashVars + "'/>";
+		htmlString += "</object>";
+		
+		viewer.postMessage(htmlString,"*");
+	}
+	
+	window.childSandboxBridge.rewriteDiv = rewriteDiv;
+   </SCRIPT>
+ </HEAD>
+ <BODY>
+   <div id="viewerWrapper">
+   </div>
+ </BODY>
+</HTML>

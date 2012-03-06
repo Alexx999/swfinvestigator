@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:GridItemEditor xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				  xmlns:s="library://ns.adobe.com/flex/spark" width="400" height="300">
+
+	<fx:Script>
+		<![CDATA[
+			/****************************************************************************
+			 * ADOBE SYSTEMS INCORPORATED
+			 * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+			 * All Rights Reserved.
+			 *  
+			 * NOTICE: Adobe permits you to use, modify, and distribute this file
+			 * in accordance with the terms of the license agreement accompanying it.
+			 * ****************************************************************************/
+			
+			override protected function validate():Boolean {
+				var re:RegExp = /^[A-Fa-f0-9]{2}$/g;
+				if (re.test(value.toString()) == false) {
+					return (false);
+				}
+				return (true);
+			}
+		]]>
+	</fx:Script>
+	
+	<s:TextInput id="textInput" text="@{value}" top="0" left="0" bottom="0" right="0" />
+	
+</s:GridItemEditor>

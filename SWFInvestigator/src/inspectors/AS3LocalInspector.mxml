@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:mx="library://ns.adobe.com/flex/mx"
+		   xmlns:fx="http://ns.adobe.com/mxml/2009"
+		   xmlns:s="library://ns.adobe.com/flex/spark"
+		   xmlns:ParamHandlers="ParamHandlers.*"
+		   xmlns:utils="utils.*"
+		   implements="inspectors.IASInspector" width="724" height="582">
+	<fx:Script>
+		<![CDATA[
+			/****************************************************************************
+			 * ADOBE SYSTEMS INCORPORATED
+			 * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+			 * All Rights Reserved.
+			 *  
+			 * NOTICE: Adobe permits you to use, modify, and distribute this file
+			 * in accordance with the terms of the license agreement accompanying it.
+			 * ****************************************************************************/
+
+			import ParamHandlers.ObjectParser;
+			import ParamHandlers.ParamCollection;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			
+			/**
+			 * Under construction
+			[Bindable]
+			private var as3VariablesCol:ArrayCollection = new ArrayCollection(
+			[{label:"Under Development", data:"NA"}]);
+			 */
+			
+            [Bindable]
+            private var actionTypes:ArrayCollection = new ArrayCollection(
+                [ {label:"Retrieve Variable", data:"retrieve"}, 
+                  {label:"Call Function", data:"call"},
+                  {label:"Assign Variable", data:"assign"}]);
+			
+			private var sUrl:String;
+			
+			/**
+			 * Initialize the tab by assigning the provided URL to the global variable
+			 * 
+			 * @param url The URL of the SWF
+			 * @param rPort This is ignored and only included due to the Interface requirment
+			 * @param uAgent This is ignored and only included due to the Interface requirement
+			 */
+			public function initTab(url:String, rPort:int, uAgent:String):void {
+				this.sUrl = url;
+			}
+			
+			/**
+			 * Load the requested SWF and kick off the initialization of the tab.
+			 * 
+			 * @param swfU The String containing the URL of the SWF
+			 * @param reload A boolean indicating whether this is the first load of this SWF.
+			 */
+			private function loadSWF (swfU:String, reload:Boolean = false):void {
+				var loadUrl:String = this.sUrl;
+				
+				if (reload) {loadUrl = swfU;}
+				
+				//this.as3Display.addEventListener(Event.COMPLETE,getVariables);
+				this.as3Display.addEventListener(IOErrorEvent.IO_ERROR,displayError);
+				
+				try {
+					this.as3Display.load(swfU);
+				} catch (e:Error) {
+					this.as3output.text = "Error: " + e.name + " - " + e.message;
+				}
+			}
+			
+			/**
+			 * @private
+			 * A generic Error handler that prompts the user if a SWF could not be loaded.
+			 */
+			private function displayError(e:IOErrorEvent):void {
+				mx.controls.Alert.show("Could not load SWF","Error");
+			}
+			
+			/**
+			 * @private
+			 * Fetch or assign a variable from the loaded SWF.
+			 * 
+			 * @param callType A string that flags whether this is a retrieval or assignment operation.
+			 */
+			private function as3fetchVar(callType:String):void {
+				if (this.as3custom.text == "") {
+					this.as3output.text = "Please enter a value to fetch!";
+					return;
+				}
+				
+				var chunks:Array;
+				if (callType == 'custom') {
+					chunks = this.as3custom.text.split(".");
+				}
+				
+				var action:String = this.actionType.selectedItem.data;
+				
+				var params:Array;
+				if (action == "call" || action == "assign") {
+					params = this.sendDG.getFuncParams();
+				}
+				
+				var swfDisplayPtr:DisplayObject = this.as3Display.content;
+				var tempArray:Array = new Array();
+				var dumbFlag:int = -1;
+				
+				try {
+					for each (var name:* in chunks) {
+						//If we are referencing a _level0 object (e.g. the name is not foo.bar.something)
+						if (dumbFlag == -1) {
+							if (action == "call" && chunks.length == 1) {
+								//Is this used?
+								//var args:Array = new Array(1);
+								tempArray.push(swfDisplayPtr[name].apply(swfDisplayPtr,params));
+							} else if (action == "assign" && chunks.length == 1) {
+								swfDisplayPtr[name] = params[0];
+								this.as3output.text = "Value Assigned";
+								return;
+							} else {
+								tempArray.push(swfDisplayPtr[name]);
+							}
+						} else if ((chunks.length == dumbFlag + 2) && action == "call") {
+							tempArray.push(tempArray[dumbFlag][name].apply(tempArray[dumbFlag],params));
+						} else if ((chunks.length == dumbFlag + 2) && action == "assign") {
+							tempArray[dumbFlag][name] = params[0];
+							this.as3output.text = "Value Assigned";
+							return;
+						} else {
+							//If tempArray is foo, chunks represents foo.bar.fu.bar and dumbFlag=0
+							//Then this will push foo["bar"]
+							tempArray.push(tempArray[dumbFlag][name]);
+						}
+						dumbFlag++;
+					}
+				} catch (e:Error) {
+					this.as3output.text = e.name + ": " + e.message;
+					return;
+				}
+
+				var varData:* = tempArray.pop();
+				var outputData:String = "";
+				
+				var oParser:ObjectParser = new ObjectParser();
+				outputData += oParser.valueToString(name,varData);
+			    	
+				this.as3output.text = outputData;
+			}
+			
+			/**
+			 * @private
+			 * Called by loadSWF once the SWF is loaded to look for variables and add them to the Collection on the Tab.
+			 * 
+			 * @param e The Complete Event from the loadSWF operation.
+			 */
+			/**
+			 * To be finished later
+			private function getVariables(e:Event):void {
+				var disObj:DisplayObject = this.as3Display.content;
+				for each (var name:* in disObj) {
+					this.as3VariablesCol.addItem(typeof(name));
+				}
+			}
+			 */
+
+			/**
+			 * @private
+			 * Reload the current SWF using the user supplied flashVars
+			 */			
+			private function updateFlashVars():void {
+				var newUrl:String;
+				if (this.sUrl.indexOf("?") > 0) {
+					newUrl = this.sUrl + "&" + this.flashVarsBox.text;
+				} else {
+					newUrl = this.sUrl + "?" + this.flashVarsBox.text;
+				}
+				loadSWF(newUrl,true);
+			}
+
+			/**
+			 * @private
+			 * Clear the list of AS3 variables and as3output to start over.
+			 */
+			private function clearArrays():void {
+				//this.as3VariablesCol.removeAll();
+				this.as3output.text = "";
+			}
+			
+		]]>
+	</fx:Script>
+	<s:Label x="222" y="12" text="Display"/>
+	<s:BorderContainer height="405" width="453" y="33" x="10" borderStyle="solid" borderColor="0xB7BABC">
+		<mx:SWFLoader id="as3Display" width="450" height="400" trustContent="false" initialize="loadSWF(this.sUrl,false)"/>
+	</s:BorderContainer>
+	<s:TextArea x="10" y="443" width="453" height="116" id="as3output"/>
+	<!--
+	<s:Label x="547" y="16" text="Variables"/>
+	<s:List x="481" y="34" id="as3globalList" dataProvider="{this.as3VariablesCol}" width="223" height="37"/>
+	<mx:HRule x="481" y="90" width="223"/>
+	-->
+	<s:Label x="479" y="33" text="1: Specify the target variable or function"/>
+	<s:Label x="481" y="57" text="Function/Variable Name" width="158"/>
+	<s:TextInput x="481" y="69" id="as3custom" width="223"
+				 toolTip="Please provide the object name plus the property or method. Example: myTextInput.text"/>
+	<s:Label x="481" y="117" text="2. Provide the data that will be given to (1)"/>
+	<s:Label x="482" y="142" text="Function Parameters/New Value" width="223"/>
+	<ParamHandlers:ParamCollection x="481" y="158" width="226" id="sendDG" height="227" includeObject="true"/>
+	<s:Label x="481" y="409" text="3. Choose the action to perform"/>
+	<s:DropDownList id="actionType" x="483" y="429" width="118" dataProvider="{this.actionTypes}" prompt="Choose Action"
+					toolTip="Select the action that will be performed to the target specified in step 1."/>
+	<s:Button x="633" y="429" label="Execute" click="as3fetchVar('custom')"/>
+	<mx:HRule x="481" y="478" width="222" height="2"/>
+	<s:Label x="481" y="488" text="Update FlashVar Values" width="226"/>
+	<s:TextInput x="481" y="507" id="flashVarsBox" editable="true" width="223"
+				 toolTip="Update the FlashVars provided to the SWF: foo=1&amp;bar=2"/>
+	<s:Button x="481" y="538" label="Update" click="updateFlashVars()"/>
+</s:Module>

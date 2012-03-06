@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:NavigatorContent xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="756" height="594" show="initStrings()">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			/****************************************************************************
+			 * ADOBE SYSTEMS INCORPORATED
+			 * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+			 * All Rights Reserved.
+			 *  
+			 * NOTICE: Adobe permits you to use, modify, and distribute this file
+			 * in accordance with the terms of the license agreement accompanying it.
+			 * ****************************************************************************/
+			
+			/********************
+			 * Strings Tab		*
+			 ********************/
+			
+			import osUtils.FileActionEvent;
+			import osUtils.FileActions;
+			
+			private var securityStrings:Array;
+			private var fActions:FileActions;
+			
+			/**
+			 * @private
+			 * Initializes the Strings tab upon viewing.
+			 */ 
+			public function initStrings():void {
+				if (parentApplication.currentASD == null) {
+					stringsList.dataProvider = null;
+					return;
+				}
+				
+				if (securityStrings == null) {
+					this.fActions = new FileActions();
+					
+					var stringsLoc:String = parentApplication.pDB.getPref("securityStrings");
+					if (stringsLoc == "") {
+						stringsLoc = "app:/configs/securityStrings.txt";
+					}
+					
+					this.fActions.currentFile = new File(stringsLoc);;
+					this.fActions.openStream(FileActions.READ);
+					this.securityStrings = this.fActions.readAsDictionary();
+					this.fActions.closeFile();
+				}
+				
+				if (parentApplication.currentASD.swfData.avm2) {
+					var arr:Array = parentApplication.currentASD.dumpStrings();
+					numStrings.text = "" + arr.length;
+					findSecurityStrings(arr);
+					
+					//Hack to get around a bug in Flex SDK
+					//FlexSDK would try to interpret toString as toString()
+					//Changed to work for all strings due to similar bugs
+					//Manually assign the value to include space
+					for (var i:int = 0; i < arr.length; i++) {
+						arr[i] = arr[i] + " ";
+					}
+					
+					stringsList.dataProvider = arr;
+				}
+			}
+			
+			/**
+			 * @private
+			 * Provides the search functionality to find a string within the array of strings and highlight it.
+			 */ 
+			private function findString():void {
+				if (searchText.text == null) {
+					return;
+				}
+				this.searchButton.label="Find Next";
+				stringsList.findString(searchText.text);
+			}
+			
+			/**
+			 * @private
+			 * Search for relevant security strings
+			 * 
+			 * @param stringsArr The list of strings for this application
+			 */
+			private function findSecurityStrings(stringsArr:Array):void {
+				var foundSecurityStrings:Array = new Array();
+				
+				var i:int = 0;
+				
+				for (i = 0; i < stringsArr.length; i++) {
+					if (this.securityStrings.indexOf(stringsArr[i]) != -1) {
+						foundSecurityStrings.push(stringsArr[i]);
+					}
+				}
+				
+				//Hack to get around a bug in Flex SDK
+				//FlexSDK would try to interpret toString as toString()
+				//Changed to work for all strings due to similar bugs
+				//Manually assign the value to include space
+				for (i = 0; i < foundSecurityStrings.length; i++) {
+					foundSecurityStrings[i] = foundSecurityStrings[i] + " ";
+				}
+				
+				if (foundSecurityStrings.length == 0) {
+					foundSecurityStrings.push("No relevant strings found");
+				}
+				
+				securityStringsList.dataProvider = foundSecurityStrings;
+			}
+			
+			/**
+			 * @private
+			 * Assigns the text box to the File Location of the dictionary file
+			 * 
+			 * @param evt The FileActionEvent
+			 */
+			private function updateSecurityStrings(evt:FileActionEvent):void {
+				this.securityStrings = evt.target.readAsDictionary();
+				evt.target.closeFile();
+				this.findSecurityStrings(parentApplication.currentASD.dumpStrings());
+			}
+			
+			/**
+			 * @private
+			 * This function creates the popUp window to select the dictionary file
+			 */
+			private function onBrowseClick():void {
+				if (this.fActions == null) {
+					this.fActions = new FileActions();
+					this.fActions.currentFile = File.applicationDirectory.resolvePath("configs");;
+				} 
+				var fFilter:FileFilter = new FileFilter("Text file","*.txt;*.dict");
+				this.fActions.addEventListener(FileActionEvent.OPEN_RO_COMPLETE,updateSecurityStrings);
+				this.fActions.openFile(fFilter,FileActions.READ);
+			}
+			
+		]]>
+	</fx:Script>
+	<s:Group percentWidth="90" height="580">
+		<s:VGroup x="10" y="5" paddingLeft="10" paddingTop="10" paddingBottom="10" width="330" height="100%">
+			<s:HGroup width="299">
+				<s:Label x="23" y="14" text="Number of Strings: " width="112"/>
+				<s:Label x="137" y="14" width="78" id="numStrings" enabled="true"/>				
+			</s:HGroup>
+			<s:Group height="74">
+				<s:Label x="-1" y="4" width="109" text="Search all strings:"/>
+				<s:TextInput id="searchText" x="0" y="16" width="300" click="this.searchButton.label='Find'"/>
+				<s:Button x="227" y="43" id="searchButton" label="Find" click="findString()"/>
+			</s:Group>
+			<s:Group width="299" height="409">
+				<mx:HRule x="3" y="4" width="283" height="1"/>
+				<s:Label x="3" y="18" width="138" text="Security relevant strings:"/>
+				<mx:List x="3" y="30" width="283" height="375" id="securityStringsList"/>
+			</s:Group>
+			<s:HGroup width="268" height="27" verticalAlign="middle">
+				<s:Label x="37" y="539" text="Select a different string dictionary:"/>
+				<s:Button x="236" y="533" label="Choose" click="onBrowseClick()"/>			
+			</s:HGroup>
+		</s:VGroup>
+		<s:VGroup x="340" y="5" paddingLeft="10" paddingBottom="10" paddingRight="10" paddingTop="10" percentWidth="100">
+			<s:Label x="339" y="14" percentWidth="100" text="All strings:"/>
+			<mx:List x="339" y="32" percentWidth="100" height="527" id="stringsList"/>
+		</s:VGroup>
+	</s:Group>
+</s:NavigatorContent>

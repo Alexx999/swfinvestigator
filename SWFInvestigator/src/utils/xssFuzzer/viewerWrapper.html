@@ -1,0 +1,49 @@
+<html lang="en">
+<!-- 
+ /****************************************************************************
+ * ADOBE SYSTEMS INCORPORATED
+ * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+ * All Rights Reserved.
+ *  
+ * NOTICE: Adobe permits you to use, modify, and distribute this file
+ * in accordance with the terms of the license agreement accompanying it.
+ * ****************************************************************************/
+-->
+
+ <head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+  <title>Viewer Wrapper</title>
+  <script type="text/javascript">
+	
+	//Create postMessage listener
+	var eventMethod = window.addEventListener ? "addEventListener" : "attachEvent";
+	var eventRef = window[eventMethod];
+	var messageEvent = eventMethod == "attachEvent" ? "onmessage" : "message";
+
+	//Listen to message from child window
+	eventRef(messageEvent,function(e) {var div = document.getElementById("viewer");div.innerHTML = e.data; } );
+
+	
+  </script>
+  <style>
+    body { margin: 0px; overflow:hidden }
+  </style>
+ </head>
+
+ <body scroll="no">
+  <div id="viewer"></div>
+   <script language="JavaScript" type="text/javascript">
+		
+	function viewer_DoFScommand(command, args) {
+		parent.postMessage("ping","*");
+	}
+		
+	function sendPingBack() {
+		parent.postMessage("ping","*");
+	}
+	
+
+  </script>
+ </body>
+</html>

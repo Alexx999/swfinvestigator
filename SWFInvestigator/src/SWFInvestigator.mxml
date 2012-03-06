@@ -1,0 +1,813 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:viewer="viewer.*"
+					   xmlns:tabs="tabs.*"
+					   height="688" width="806" windowComplete="initApplication()" showStatusBar="false" backgroundColor="#EE1919" >
+	<fx:Style source="SWFInvestigator.css"/>
+	<fx:Script>
+		<![CDATA[
+		 /****************************************************************************
+		 * ADOBE SYSTEMS INCORPORATED
+		 * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+		 * All Rights Reserved.
+		 * 
+		 * NOTICE: Adobe permits you to use, modify, and distribute this file
+		 * in accordance with the terms of the license agreement accompanying it.
+		 * ****************************************************************************/
+
+			import databaseUtils.PreferencesDB;
+			
+			import decompiler.ASDecompiler;
+			
+			import mx.collections.XMLListCollection;
+			import mx.controls.Alert;
+			import mx.events.MenuEvent;
+			
+			import osUtils.DragAndDropManager;
+			
+			import popUps.GetSWFUrl;
+			import popUps.PopUpReturnEvent;
+			
+			import updateManager.installManager;
+			
+			import utils.utilWindow;
+                                    
+            [Bindable]
+            private var menuBarCollection:XMLListCollection;
+			
+			//Update Manager
+			private var iManager:installManager = new installManager();
+
+		]]>
+	</fx:Script>
+			
+	<fx:Declarations>
+		<fx:XMLList id="menuXML">
+        	<menuitem label="File">
+            	<menuitem label="Open URL" data="Open URL"/>
+            	<menuitem label="Open File" data="Open File"/>
+            	<menuitem label="------------" enabled="false"/>
+            	<menuitem label="Open Recent" enabled="false"></menuitem>
+            	<menuitem label="Clear History" data="Clear History" enabled="false"/>
+            	<menuitem label="------------" enabled="false"/>
+            	<menuitem label="Save Data" data="Save Data" enabled="false"/>
+				<menuitem label="Save Tags" data="Save Tags" enabled="false"/>
+				<menuitem label="Save SWF" data="Save SWF" enabled="false"/>
+				<menuitem label="------------" enabled="false"/>
+            	<menuitem label="Exit" data="Exit"/>
+        	</menuitem>
+        	<menuitem label="Edit">
+            	<menuitem label="Cut" data="Cut" enabled="false"/>
+            	<menuitem label="Copy" data="Copy" enabled="false"/>
+            	<menuitem label="Paste" data="Paste" enabled="false"/>
+            	<menuitem label="------------" enabled="false"/>
+            	<menuitem label="Preferences" data="Preferences" enabled="true"/>
+        	</menuitem>
+			<menuitem label="View">
+				<menuitem label="LSO Editor" data="LSOEditor" enabled="true"/>
+				<menuitem label="Settings Viewer" data="SettingsViewer" enabled="true"/>
+				<menuitem label="------------" enabled="false"/>
+				<menuitem label="SWF in Browser" data="SwfBrowse" enabled="false"/>
+			</menuitem>
+        	<menuitem label="AMF">
+        		<menuitem label="LC Communicator" data="LCEnum"/>
+        		<menuitem label="AMF Transmitter" data="AMFQuery"/>
+        		<menuitem label="AMF Identifier" data="AMFIdent"/>
+				<menuitem label="AMF Fuzzer" data="AMFFuzz"/>
+        		<menuitem label="Object Editor" data="ObjectEditor" enabled="true"/>
+        	</menuitem>
+			<menuitem label="Utilities">
+				<menuitem label="Decoder Util" data="EncDec"/>
+				<menuitem label="Binary Editor" data="StringToBin" enabled="true"/>
+				<menuitem label="AS3 Compiler" data="as3Compiler"/>
+				<menuitem label="XSS Fuzzer" data="xssFuzzer"/>
+				<menuitem label="Remap Browser" data="RemapBrowser"/>
+				<menuitem label="Mini Web Server" data="miniWebServer"/>
+			</menuitem>
+        	<menuitem label="Help">
+        		<menuitem label="Help Contents" data="Help"/>
+        		<!--<menuitem label="AVM2 Overview" data="avm2pdf"/>-->
+        		<menuitem label="------------" enabled="false"/>
+        		<menuitem label="Check for updates" data="UpdateCheck"/>
+				<menuitem label="About" data="About"/>
+			</menuitem>
+    	</fx:XMLList>
+	</fx:Declarations>
+    
+    <mx:ApplicationControlBar width="100%" dock="true" id="controlBar" alpha="1.0" fillAlphas="[1.0, 1.0]" fillColors="[#FFFFFF, #FFFFFF]">
+	   <mx:MenuBar height="100%" id="menuBar"
+            dataProvider="{this.menuBarCollection}" 
+            labelField="@label" 
+            showRoot="true" itemClick="menuSelect(event)" width="98%"/>
+	</mx:ApplicationControlBar>
+    
+    <!-- width="773" height="625" -->
+	<mx:TabNavigator id="tabNav" x="23" y="41" width="95%" height="628">
+		<s:NavigatorContent label="SWF Info" width="95%" height="95%" tabIndex="0" show="initMainBox()">
+			<s:Group id="swfInfo" width="100%">				
+				<s:Label x="10" y="31" text="Filename:"/>
+				<s:Label x="98" y="28" width="640" id="filenameBox" enabled="true"/>
+				<s:Label x="10" y="63" text="Version:"/>
+				<s:Label x="98" y="63" width="65" enabled="true" id="versionBox"/>
+				<s:Label x="10" y="90" text="Compressed:"/>
+				<s:Label x="99" y="89" width="65" id="compressedBox"/>
+				<s:Label x="10" y="115" text="Size:" enabled="true" width="81"/>
+				<s:Label x="99" y="115" width="65" id="sizeBox"/>
+				<s:Label x="10" y="142" text="Movie Rect:"/>
+				<s:Label x="99" y="142" width="248" id="movieRect" enabled="true"/>
+				<s:Label x="192" y="64" text="AVM2:" enabled="true" width="42"/>
+				<s:Label x="282" y="63" id="avm2Box" enabled="true" width="65"/>
+				<s:Label x="192" y="89" text="Has Actions:"/>
+				<s:Label x="282" y="89" width="65" id="hasActionsBox" enabled="true"/>	
+				<s:Label x="192" y="115" text="Has Metadata"/>
+				<s:Label id="hasMetadata" x="282" y="115" width="65"/>
+				<s:Label x="377" y="90" text="Frame Rate:"/>
+				<s:Label x="467" y="91" width="65" id="frameRateBox" height="18"/>
+				<s:Label x="377" y="64" text="Frame Count:"/>
+				<s:Label x="467" y="64" width="65" id="frameCountBox"/>
+				<s:Label x="377" y="116" text="useGPU:"/>
+				<s:Label id="useGPU" x="467" y="116" width="65"/>
+				<s:Label x="377" y="141" text="useDirectBlit:"/>
+				<s:Label id="useDirectBlit" x="467" y="141" width="66"/>
+				<s:Label x="545" y="64" text="Local w/ Networking:"/>
+				<s:Label id="useNetwork" x="685" y="64" width="53"/>
+				<s:Label x="545" y="90" text="Use Relative URLs:"/>
+				<s:Label id="swfRelativeURLs" x="685" y="90" width="53"/>
+				<s:Label x="545" y="116" width="132" height="46" text="Suppress crossdomain caching:"/>
+				<s:Label id="xdomainCache" x="685" y="120" width="52"/>
+				<s:Label x="119" y="215" text="Exported Classes" width="112"/>
+				<s:TextArea x="10" y="239" width="337" height="330" id="exportClasses"/>
+				<s:Label x="545" y="217" text="File Tags" width="60"/>
+				<s:TextArea x="402" y="239" width="337" height="330" id="fileTags"/>
+			</s:Group>
+		</s:NavigatorContent>
+		<tabs:TagPanel id="tPanel" label="Tag Viewer" tabIndex="2" height="586"/>
+		<tabs:SWFDisassembler id="swfDisassembler" label="SWF Disassembler" width="100%" height="100%" tabIndex="3"/>
+		<tabs:EditorTab id="hexEditor" label="Hex Editor" tabIndex="4"/>
+		<tabs:ViewerTab id="vTab" label="SWF Viewer" tabIndex="5" show="this.vTab.initViewer(this.swfUrl,false,this.pDB.getIntPref('remapPort'),this.pDB.getPref('viewerTemplate'), this.pDB.getPref('defaultUserAgent'))"/>
+		<tabs:InspectorTab id="modLoad" label="Inspector" tabIndex="6" show="initInspector()"/>
+		<tabs:AS3Navigator id="as3nav" label="AS3 Navigator" tabIndex="7"/>
+		<tabs:StringViewer id="as3Strings" label="Strings" tabIndex="8"/>
+	</mx:TabNavigator>
+
+	<fx:Script>
+		<![CDATA[
+			//Public variables for child modules
+			public var currentASD:ASDecompiler = null;
+			public var swfUrl:String;
+			private var fileName:String;
+			
+			[Bindable]
+			public var pDB:PreferencesDB;
+			
+			private var domain:String;
+			
+			//A copy of the original SWF
+			public var swfBytes:ByteArray = new ByteArray();
+			
+			private var uWindow:utilWindow;
+			private var popUrl:GetSWFUrl;
+			
+			private var dragManager:DragAndDropManager;
+
+
+			/**
+			 * @private
+			 * Called a SWF Investigator launch to copy necessary files to app-storage
+			 */		
+			private function initApplication():void {
+
+				var targetParent:File;
+				//Copy LSO Data
+
+				var destination:File = File.applicationStorageDirectory;
+				destination = destination.resolvePath("lsoViewer/dumpLSO.swf");
+				//if (destination.exists) {return;}
+				
+				try {
+					var sourceFile:File = File.applicationDirectory;
+					sourceFile = sourceFile.resolvePath("lsoViewer/dumpLSO.swf");
+					sourceFile.copyTo(destination, true);
+				
+					var sourceHTML:File = File.applicationDirectory;
+					sourceHTML = sourceHTML.resolvePath("lsoViewer/dumpWrapper.html");
+					var destinationHTML:File = File.applicationStorageDirectory;
+					destinationHTML = destinationHTML.resolvePath("lsoViewer/dumpWrapper.html");
+					sourceHTML.copyTo(destinationHTML, true);
+				
+					var sourceAC:File = File.applicationDirectory;
+					sourceAC = sourceAC.resolvePath("lsoViewer/AC_OETags.js");
+					var destinationAC:File = File.applicationStorageDirectory;
+					destinationAC = destinationAC.resolvePath("lsoViewer/AC_OETags.js");
+					sourceAC.copyTo(destinationAC, true);
+				
+				
+					//Copy Inspector Wrapper Files
+					sourceAC = File.applicationDirectory.resolvePath("inspectors/AC_OETags.js");
+					destinationAC = File.applicationStorageDirectory.resolvePath("inspectors/AC_OETags.js");
+					sourceAC.copyTo(destinationAC, true);
+				
+					sourceHTML = File.applicationDirectory.resolvePath("inspectors/getVars.swf");
+					destinationHTML = File.applicationStorageDirectory.resolvePath("inspectors/getVars.swf");
+					sourceHTML.copyTo(destinationHTML, true);
+
+					sourceHTML = File.applicationDirectory.resolvePath("inspectors/getVarsWrapper.html");
+					destinationHTML = File.applicationStorageDirectory.resolvePath("inspectors/getVarsWrapper.html");
+					sourceHTML.copyTo(destinationHTML, true);
+				
+					sourceHTML = File.applicationDirectory.resolvePath("inspectors/getAS3Vars.swf");
+					destinationHTML = File.applicationStorageDirectory.resolvePath("inspectors/getAS3Vars.swf");
+					sourceHTML.copyTo(destinationHTML, true);
+
+					sourceHTML = File.applicationDirectory.resolvePath("inspectors/getAS3VarsWrapper.html");
+					destinationHTML = File.applicationStorageDirectory.resolvePath("inspectors/getAS3VarsWrapper.html");
+			   		sourceHTML.copyTo(destinationHTML, true);
+				
+				
+					//Copy LCEnumerator Wrapper Files
+			 		sourceHTML = File.applicationDirectory.resolvePath("lcEnumerator/LCEnumerator.swf");
+				 	destinationHTML = File.applicationStorageDirectory.resolvePath("lcEnumerator/LCEnumerator.swf");
+					sourceHTML.copyTo(destinationHTML, true);
+
+					sourceHTML = File.applicationDirectory.resolvePath("lcEnumerator/LCEnumerator.html");
+					destinationHTML = File.applicationStorageDirectory.resolvePath("lcEnumerator/LCEnumerator.html");
+					sourceHTML.copyTo(destinationHTML, true);
+				
+					//Copy XSS Fuzzer files
+					sourceHTML = File.applicationDirectory.resolvePath("utils/xssFuzzer/viewerWrapper.html");
+					destinationHTML = File.applicationStorageDirectory.resolvePath("xssFuzzer/viewerWrapper.html");
+					sourceHTML.copyTo(destinationHTML, true);
+				
+					sourceHTML = File.applicationDirectory.resolvePath("utils/xssFuzzer/shim.html");
+					destinationHTML = File.applicationStorageDirectory.resolvePath("xssFuzzer/shim.html");
+					sourceHTML.copyTo(destinationHTML, true);
+				
+					sourceAC = File.applicationDirectory.resolvePath("utils/xssFuzzer/crossdomain.xml");
+					destinationAC = File.applicationStorageDirectory.resolvePath("fuzzerServer/crossdomain.xml");
+					sourceAC.copyTo(destinationAC, true);
+				
+					sourceAC = File.applicationDirectory.resolvePath("utils/xssFuzzer/ExternalInterfacePing.swf");
+					destinationAC = File.applicationStorageDirectory.resolvePath("fuzzerServer/ExternalInterfacePing.swf");
+					sourceAC.copyTo(destinationAC, true);
+				
+					sourceAC = File.applicationDirectory.resolvePath("utils/xssFuzzer/NavigateToURLPing.swf");
+					destinationAC = File.applicationStorageDirectory.resolvePath("fuzzerServer/NavigateToURLPing.swf");
+					sourceAC.copyTo(destinationAC, true);
+				
+					sourceAC = File.applicationDirectory.resolvePath("utils/xssFuzzer/FSCommandPing.swf");
+					destinationAC = File.applicationStorageDirectory.resolvePath("fuzzerServer/FSCommandPing.swf");
+					sourceAC.copyTo(destinationAC, true);
+				
+					sourceAC = File.applicationDirectory.resolvePath("utils/xssFuzzer/GetURLPing.swf");
+					destinationAC = File.applicationStorageDirectory.resolvePath("fuzzerServer/GetURLPing.swf");
+					sourceAC.copyTo(destinationAC, true);
+				} catch (e:SecurityError) {
+					mx.controls.Alert.show("Could not copy files to application storage. Ensure that you have the proper permissions","Error");
+				} catch (e:IOError) {
+					mx.controls.Alert.show("Could not copy files to application storage. Ensure that they are not marked read only and that they are not currently open.","Error");
+				}
+				
+				//Init Database
+				this.pDB = new PreferencesDB("");
+				
+				//Init Util Window
+				this.uWindow = new utilWindow(this.pDB);
+				
+				//Init MenuBar with History info
+				this.updateMenuBar();
+				
+				//Check for updates
+				if (this.pDB.getIntPref("autoUpdateCheck") == 1) {
+					this.iManager.checkForUpdates();
+				}
+				
+				//Set up a new drag manager
+				if (DragAndDropManager.isSupported()) {
+					this.dragManager = new DragAndDropManager(this.tabNav,dndCallback);
+				}
+			}		
+			
+			/**
+			 * @private
+			 * Update the menubar with the file history
+			 */
+			private function updateMenuBar():void {
+				var fhXML:XML = pDB.getFileHistory();
+				this.menuXML[0].menuitem[3] = fhXML;
+				
+				if (fhXML.hasSimpleContent() == false) {
+					this.menuXML[0].menuitem[4].@enabled = "true";
+				} else {
+					this.menuXML[0].menuitem[4].@enabled = "false";
+				}
+				
+				this.menuBarCollection = new XMLListCollection(this.menuXML);
+				
+			}
+		    
+		    /**
+		     * @private
+		     * When someone selects something from the pull-down menu, launch the appropriate application
+		     * 
+		     * @param evt The Menu Select event.
+		     */
+		    private function menuSelect(evt:MenuEvent):void {
+		    	if (evt.item.@data.indexOf("Open URL") == 0) {
+		    		if (this.popUrl == null) {
+		    			this.popUrl = new GetSWFUrl();
+		    		}
+		    		this.popUrl.addEventListener(PopUpReturnEvent.URL_RETURNED,grabSWF);
+		    		this.popUrl.createPopUp(this);
+		    	} else if (evt.item.@data.indexOf("Open File") == 0) {
+		    		var fileR:File = new File();
+		    		var arr:Array = new Array();
+		    		arr[0] = new FileFilter("Flash Files (*.swf, *.swc)", "*.swf;*.swc;")
+		    		fileR.addEventListener(Event.SELECT,grabSWF);
+		    		fileR.browseForOpen ("Select File", arr);
+		    	} else if (evt.item.@data.indexOf("Exit") == 0) {
+		    		this.close();
+		    	} else if (evt.item.@data.indexOf("Save Data") == 0) {
+		    		this.onSaveData();
+				} else if (evt.item.@data.indexOf("Save Tags") == 0) {
+					this.onSaveTags();
+				} else if (evt.item.@data.indexOf("Save SWF") == 0) {
+					this.onSaveSWF();
+		    	} else if (evt.item.@data.indexOf("Help") == 0) {
+		   			var options:NativeWindowInitOptions = new NativeWindowInitOptions();
+		    		var bounds:Rectangle = new Rectangle(10, 10, 700, 700);
+
+		    		var html:HTMLLoader = HTMLLoader.createRootWindow(true,options,true,bounds);
+		    		html.load(new URLRequest("app:/help/help.html"));
+					/**
+		    	} else if (evt.item.@data.indexOf("avm2pdf") == 0) {
+		   			var pdfOptions:NativeWindowInitOptions = new NativeWindowInitOptions();
+		    		var pdfBounds:Rectangle = new Rectangle(10, 10, 600, 600);
+
+		    		var pdfHtml:HTMLLoader = HTMLLoader.createRootWindow(true,pdfOptions,false,pdfBounds);
+		    		pdfHtml.load(new URLRequest("app:/Help/avm2overview.pdf"));
+					 */
+		    	} else if (evt.item.@data.indexOf("file|") == 0) {
+		    		this.swfUrl = evt.item.@label + "|" + evt.item.@data;
+		    		this.grabSWF(null);
+		    	} else if (evt.item.@data.indexOf("url|") == 0) {
+		    		this.swfUrl = evt.item.@label + "|" + evt.item.@data;
+		    		this.grabSWF(null);
+		    	} else if (evt.item.@data.indexOf("Clear History") == 0) {
+		    		this.pDB.clearFileHistory();
+		    		this.updateMenuBar();
+		    	} else if (evt.item.@data.indexOf("EncDec") == 0) {
+		    		uWindow.createNewRootWindow("EncDec",null);
+		    	} else if (evt.item.@data.indexOf("LCEnum") == 0) {
+		    		uWindow.createNewRootWindow("LCEnum",this.getDomain());
+		    	} else if (evt.item.@data.indexOf("SwfBrowse") == 0) {
+		    		if (this.swfUrl != null) {
+		    			navigateToURL(new URLRequest(this.swfUrl),"BrowserView");
+		    		}
+		    	} else if (evt.item.@data.indexOf("Preferences") == 0) {
+		    		uWindow.createNewRootWindow("Preferences",null);
+		    	} else if (evt.item.@data.indexOf("About") == 0) {
+		    		uWindow.createNewRootWindow("About",null);
+		    	} else if (evt.item.@data.indexOf("AMFQuery") == 0) {
+		    		uWindow.createNewRootWindow("AMFQuery",null);
+		    	} else if (evt.item.@data.indexOf("AMFIdent") == 0) {
+		    		uWindow.createNewRootWindow("AMFIdent",null);
+		    	} else if (evt.item.@data.indexOf("RemapBrowser") == 0) {
+		    		uWindow.createNewRootWindow("RemapBrowser",null);
+		    	} else if (evt.item.@data.indexOf("ObjectEditor") == 0) {
+		    		uWindow.createNewRootWindow("ObjectEditor",null);
+				} else if (evt.item.@data.indexOf("StringToBin") == 0) {
+					uWindow.createNewRootWindow("StringToBin",null);
+				} else if (evt.item.@data.indexOf("LSOEditor") == 0) {
+					uWindow.createNewRootWindow("LSOViewer",null);
+				} else if (evt.item.@data.indexOf("SettingsViewer") == 0) {
+					uWindow.createNewRootWindow("SettingsViewer",null);
+				} else if (evt.item.@data.indexOf("as3Compiler") == 0) {
+					uWindow.createNewRootWindow("as3Compiler",null);
+				} else if (evt.item.@data.indexOf("xssFuzzer") == 0) {
+					uWindow.createNewRootWindow("xssFuzzer",null);
+				} else if (evt.item.@data.indexOf("miniWebServer") == 0) {
+					uWindow.createNewRootWindow("miniWebServer",null);
+				} else if (evt.item.@data.indexOf("AMFFuzz") == 0) {
+					uWindow.createNewRootWindow("AMFFuzz",null);
+		    	} else if (evt.item.@data.indexOf("UpdateCheck") == 0) {
+		    		this.iManager.checkForUpdates(true);
+		    	} 
+		    	
+		    }
+		    
+		    
+		    /**
+		     * @private
+		     * Called when the user requests to load a new SWF, this figures out where to fetch the file and tries to load it.
+		     * 
+		     * @param evt The event from whatever loaded the bytes for the SWF.
+		     */
+		    private function grabSWF (evt:Event):void {
+		    	var type:String;
+		    	//var name:String;
+				
+				//Enable Save boxes
+				this.menuXML[0].menuitem[6].@enabled = true;
+				this.menuXML[0].menuitem[7].@enabled = true;
+				this.menuXML[0].menuitem[8].@enabled = true;
+				
+		    	if (evt == null) {
+		    		var tmpArray:Array = this.swfUrl.split(/\|/,3);
+		    		this.fileName = tmpArray[0];
+		    		type = tmpArray[1];
+		    		this.swfUrl = tmpArray[2];
+		    	} else if (evt.type.indexOf("select") == 0) {
+		    		//this.swfUrl = "file:///" + evt.target.nativePath;
+		    		this.swfUrl = evt.currentTarget.url;
+		    		type = "file";
+		    		this.fileName = evt.currentTarget.name;
+		    	} else if (evt.type.indexOf("urlReturned") == 0) {
+		    		this.swfUrl = evt.target.historyUrl;
+		    		type = "url";
+		    		this.fileName = evt.currentTarget.historyUrl;
+		    	}
+		    	
+		    	this.filenameBox.text = this.fileName;
+				this.title = "SWF Investigator - " + this.fileName;
+				clearMainBox();
+		    	this.pDB.updateFileHistory(this.fileName,type,this.swfUrl);
+		    	this.updateMenuBar();
+		    	
+		    	var urlRequest:URLRequest = new URLRequest(this.swfUrl);
+				var urlLoader:URLLoader = new URLLoader();
+		    	
+	    		urlLoader.dataFormat = URLLoaderDataFormat.BINARY;
+	    		urlLoader.addEventListener(Event.COMPLETE,gotBytes,false,0,true);
+	    		urlLoader.addEventListener(IOErrorEvent.IO_ERROR,displayIOError);
+	    	
+	    		urlLoader.load(urlRequest);
+		    }
+		    
+		    /**
+		     * @private 
+		     * Called when the urlLoader from grabSwf successfully obtains the SWF, this will initialize the ASD and various tabs.
+		     * 
+		     * @param e The complete Event from the URLLoader
+		     */
+		    private function gotBytes(e:Event):void {
+				initializeAnalyzer(e.target.data);
+			}
+			
+			/**
+			 * @private
+			 * The DragAndDrop Manager callback function
+			 * 
+			 * @param data The ByteArray containing the file data
+			 * @param fName The filename of the file
+			 * @param url The file:// url path to the file
+			 */
+			private function dndCallback(data:ByteArray,fName:String, url:String):void {
+				this.fileName = fName;
+				this.filenameBox.text = this.fileName;
+				this.title = "SWF Investigator - " + this.fileName;
+				this.swfUrl = url;
+				this.pDB.updateFileHistory(this.fileName,"file",this.swfUrl);
+				this.updateMenuBar();
+				initializeAnalyzer(data);	
+			}
+			
+			/**
+			 * @private
+			 * Called to initialize the Analyzer with a new file
+			 * 
+			 * @param data The byteArray of the file
+			 */
+			private function initializeAnalyzer(data:ByteArray):void {
+				if (this.currentASD != null) {
+					//Loading a new SWF - Remove old refs to free memory
+					this.currentASD = null;
+					this.swfBytes.clear();
+					this.hexEditor.clearRefs();
+					//this.tPanel.clearRefs();
+					System.gc();
+				}
+				
+		    	this.swfBytes.writeBytes(data);
+				this.swfBytes.position = 0;
+
+				try {
+		    		var ASD:ASDecompiler = new ASDecompiler(swfBytes);
+		    		var err:String = ASD.getInfo();
+				} catch (parseError:Error) {
+					mx.controls.Alert.show("Error parsing SWF\n\n" + parseError.message, "Error");
+				}
+				this.currentASD = ASD;
+				if (this.currentASD) {
+					this.currentASD.fileName = this.filenameBox.text;
+				}
+				
+		    	if (this.versionBox != null) {
+		    		initMainBox();
+		    	}
+				
+				if (err != null && err.length > 0) {
+					mx.controls.Alert.show("Error parsing SWF\n\n" + err, "Error");
+				}
+		    	
+		    	if (this.swfDisassembler != null) {
+		    		this.swfDisassembler.initDecompileBox(true);
+		    	}
+				
+				this.tPanel.initTagViewer();
+				
+				this.hexEditor.initHexViewer(this.swfBytes);
+				if (this.tabNav.selectedIndex == 3) {
+					this.hexEditor.updateView();
+				}
+				
+		    	//if (this.tabNav.selectedIndex == 6) {
+		    	initInspector(true);
+				
+				this.vTab.initViewer(this.swfUrl,false,this.pDB.getIntPref('remapPort'),this.pDB.getPref('viewerTemplate'), this.pDB.getPref('defaultUserAgent'));
+				
+		    	//Enable "SWF in Browser" in the menu tab
+		    	this.menuXML[2].menuitem[3].@enabled = "true";
+		    	
+		    	if (this.currentASD && this.currentASD.swfData.avm2) {
+		    		this.tabNav.getTabAt(6).visible = true;
+		    		this.tabNav.getTabAt(7).visible = true;
+					if (this.tabNav.selectedIndex == 6) {
+						this.as3nav.initNavigator();
+					} else if (this.tabNav.selectedIndex == 7) {
+						this.as3Strings.initStrings();
+					}
+		    	} else {
+		    		this.tabNav.getTabAt(6).visible = false;
+		    		this.tabNav.getTabAt(7).visible = false;
+		    	}
+								
+		    }
+
+			/**
+			 * @private
+			 * This returns an Object containing information from the URL such as port, protocol and domain.
+			 * 
+			 * This is used in a lot of places.  Should put in some form of library.
+			 * 
+			 * @return The object (hash) of information from the current SWF URL.
+			 */
+			private function getDomain():Object {
+				var domainInfo:Object = new Object;
+				domainInfo.domain = "";
+				domainInfo.protocol = "";
+				domainInfo.port = "";
+				
+				if (this.swfUrl == null) { return(domainInfo); }
+				
+				if (this.swfUrl.indexOf("http://") == 0) {
+					domainInfo.protocol = "http://";
+		    		domainInfo.domain = this.swfUrl.substring(7,this.swfUrl.indexOf("/",7));
+		    	} else if (this.swfUrl.indexOf("https://") == 0) {
+		    		domainInfo.protocol = "https://";
+		    		domainInfo.domain = this.swfUrl.substring(8,this.swfUrl.indexOf("/",8));
+		    	}
+		    	
+		    	if (domainInfo.domain.indexOf(":") > 0) {
+		    		var temp:Array = domainInfo.domain.split(":");
+		    		domainInfo.domain = temp[0];
+		    		domainInfo.port = temp[1];
+		    	}
+		    	
+		    	return (domainInfo)
+			}
+			
+			/**
+			 * @private
+			 * If the attempt to load the SWF fails, show the user an alert box.
+			 * 
+			 * @param e The IOErrorEvent from the failed load.
+			 */ 
+			private function displayIOError(e:IOErrorEvent):void {
+				mx.controls.Alert.show("ERROR: Unable to download file.","Error");
+			}
+
+			/**
+			 * @private
+			 * Called when the user selects save from the pull down menu, this will prompt the user for where to save the file.
+			 */
+			private function onSaveData():void	{
+				if (this.currentASD == null) {
+					mx.controls.Alert.show("No data to save.");
+				}
+				var docsDir:File = File.documentsDirectory.resolvePath(this.currentASD.fileName + "_data.txt");
+				docsDir.browseForSave("Save As");
+				docsDir.addEventListener(Event.SELECT, saveDataToFile);
+			}
+			
+			/**
+			 * @private
+			 * Write the basic header information for the file to the provided FileStream.
+			 * 
+			 * @param fStream The FileStream where data will be written
+			 * @param returnChar The return character to use at the end of the line.
+			 */
+			private function writeFileHeader(fStream:FileStream, returnChar:String):void {
+				fStream.writeUTFBytes("Filename: " + this.currentASD.fileName + returnChar);
+				fStream.writeUTFBytes("Version: " + this.currentASD.swfData.version + returnChar);
+				fStream.writeUTFBytes("Compressed: " + this.currentASD.swfData.compressed + returnChar);
+				fStream.writeUTFBytes("Size: " + this.currentASD.swfData.size + returnChar);
+				fStream.writeUTFBytes("HasActions: " + this.currentASD.swfData.hasActions + returnChar);
+				fStream.writeUTFBytes("AVM2: " + this.currentASD.swfData.avm2 + returnChar);
+				fStream.writeUTFBytes("hasMetadata: " + this.currentASD.swfData.hasMetadata + returnChar);
+				fStream.writeUTFBytes("Rectangle: " + this.currentASD.swfData.movieRect + returnChar);
+				fStream.writeUTFBytes("Frame Count: " + this.currentASD.swfData.frameCount + returnChar);
+				fStream.writeUTFBytes("Frame Rate: " +  this.currentASD.swfData.frameRate + returnChar);
+				fStream.writeUTFBytes("useGPU: " +  this.currentASD.swfData.useGPU + returnChar);
+				fStream.writeUTFBytes("useDirectBlit: " +  this.currentASD.swfData.useDirectBlit + returnChar);
+				fStream.writeUTFBytes("swfRelativeURLs: " +  this.currentASD.swfData.swfRelativeURLs + returnChar);
+				fStream.writeUTFBytes("suppressCrossDomainCache: " +  this.currentASD.swfData.suppressXDomainCache + returnChar);
+				fStream.writeUTFBytes(returnChar);
+			}
+			
+			/**
+			 * @private
+			 * Called by onSave once the user has selected a place to save the file, this will dump the disassembly to a text file.
+			 * 
+			 * @param evt The Select event from the File browser.
+			 */
+			private function saveDataToFile(evt:Event):void {
+				var newFile:File = evt.target as File;
+				if (!newFile.exists && this.currentASD.swfData.byteCode != null) {
+					var myPattern:RegExp = /[\r]/g;
+					
+					var returnChar:String;
+					if (Capabilities.os.indexOf("Windows") == 0) {
+						returnChar = "\r\n";
+					} else {
+						returnChar = "\n";
+					}
+					
+					var fStream:FileStream = new FileStream();
+					fStream.open(newFile, FileMode.WRITE);
+					
+					writeFileHeader(fStream,returnChar);
+					
+					fStream.writeUTFBytes(this.currentASD.swfData.exportClasses.replace(myPattern, returnChar + " ") + returnChar);
+					fStream.writeUTFBytes(this.currentASD.swfData.fileTags.replace(myPattern,returnChar + " ") + returnChar);
+					fStream.writeUTFBytes(returnChar);
+					
+					if (this.currentASD.swfData.avm2) {
+						fStream.writeUTFBytes(returnChar + "Strings: " + returnChar);
+						var arr:Array = this.currentASD.dumpStrings();
+						
+						for (var i:int = 0; i < arr.length; i++) {
+							fStream.writeUTFBytes(" " + arr[i] + returnChar);
+						}
+						
+						fStream.writeUTFBytes(returnChar);
+					}
+					
+					fStream.writeUTFBytes(returnChar + "Decompilation: " + returnChar);
+					
+					for each (var tempString:String in this.currentASD.swfData.byteCode) {
+						
+						if (Capabilities.os.indexOf("Windows") == 0) {
+							tempString = tempString.replace(myPattern,"\r\n");
+						} else {
+							tempString = tempString.replace(myPattern,"\n");
+						}
+						
+						fStream.writeUTFBytes(tempString);
+					}
+					
+					fStream.close();
+				}
+			}
+			
+			/**
+			 * @private
+			 * Called when the user selects Save Tag from the pull down menu, this will prompt the user for
+			 * where to save the file.
+			 */
+			private function onSaveTags():void	{
+				if (this.currentASD == null) {
+					mx.controls.Alert.show("No data to save.");
+				}
+				var docsDir:File = File.documentsDirectory.resolvePath(this.currentASD.fileName + "_tags.txt");
+				docsDir.browseForSave("Save As");
+				docsDir.addEventListener(Event.SELECT, saveTagsToFile);
+			}
+			
+			/**
+			 * @private
+			 * Called by onSaveTags once the user has selected a place to save the file.
+			 * This will save all the Tag information in a format similar to the Flex SWFDump utility
+			 * 
+			 * @param evt The Select event from the File browser.
+			 */
+			private function saveTagsToFile(evt:Event):void {
+				var newFile:File = evt.target as File;
+				if (!newFile.exists && this.currentASD.swfData.byteCode != null) {
+					var myPattern:RegExp = /[\r]/g;
+					
+					var returnChar:String;
+					if (Capabilities.os.indexOf("Windows") == 0) {
+						returnChar = "\r\n";
+					} else {
+						returnChar = "\n";
+					}
+					
+					var fStream:FileStream = new FileStream();
+					fStream.open(newFile, FileMode.WRITE);
+					
+					writeFileHeader(fStream,returnChar);
+					
+					//Currently the tag print hard codes everything to use \r
+					//Eventually need to update to use \n as the default
+					this.currentASD.printSortedFileTagArray(fStream,returnChar);
+					
+					fStream.close();
+				}
+			}
+			
+			private function onSaveSWF():void {
+				var file:FileReference = new FileReference();
+				if (this.fileName.indexOf("http") == 0) {
+					file.save(this.swfBytes,"local.swf");
+				} else {
+					file.save(this.swfBytes,this.fileName);
+				}
+			}
+
+		    /*********************
+		    * Main Navigator Tab *
+		    * *******************/		    
+		    
+		    /**
+		     * @private
+		     * Initializes the Main Tab for SWF Investigator with random facts about the SWF.
+		     */ 
+		    private function initMainBox():void {
+		    	if (this.currentASD == null) {
+		    		return;
+		    	}
+		    	
+		    	this.versionBox.text = this.currentASD.swfData.version;
+		    	this.avm2Box.text = this.currentASD.swfData.avm2;
+		    	this.compressedBox.text = this.currentASD.swfData.compressed;
+		    	this.sizeBox.text = this.currentASD.swfData.size;
+		    	this.hasActionsBox.text = this.currentASD.swfData.hasActions;
+		    	this.movieRect.text = this.currentASD.swfData.movieRect;
+		    	this.frameCountBox.text = this.currentASD.swfData.frameCount;
+		    	this.frameRateBox.text = this.currentASD.swfData.frameRate;
+		    	this.exportClasses.text = this.currentASD.swfData.exportClasses;
+		    	this.fileTags.text = this.currentASD.swfData.fileTags;
+				this.useDirectBlit.text = this.currentASD.swfData.useDirectBlit;
+				this.useGPU.text = this.currentASD.swfData.useGPU;
+				this.useNetwork.text = this.currentASD.swfData.useNetwork;
+				this.swfRelativeURLs.text = this.currentASD.swfData.swfRelativeURLs;
+				this.xdomainCache.text = this.currentASD.swfData.suppressCrossDomainCaching;
+				this.hasMetadata.text = this.currentASD.swfData.hasMetadata;
+		    }
+			
+			/**
+			 * @private
+			 * Clears the main box during loading
+			 */
+			private function clearMainBox():void {
+				this.versionBox.text = "";
+				this.avm2Box.text = "";
+				this.compressedBox.text = "";
+				this.sizeBox.text = "";
+				this.hasActionsBox.text = "";
+				this.movieRect.text = "";
+				this.frameCountBox.text = "";
+				this.frameRateBox.text = "";
+				this.exportClasses.text = "";
+				this.fileTags.text = "";
+				this.useGPU.text = "";
+				this.useNetwork.text = "";
+				this.swfRelativeURLs.text = "";
+				this.useDirectBlit.text = "";
+				this.hasMetadata.text = "";
+				this.xdomainCache.text = "";
+			}
+		   
+
+
+		   /*********************
+		    * Inspector Tab 	*
+		    *********************/
+		    
+		    /**
+		     * @private
+		     * Calls the Inspector's initTab function if there is a SWF to load.
+		     */
+		    private function initInspector(force:Boolean = false):void {
+		    	if (this.currentASD == null) {
+		    		return;
+		    	} else {
+		    		this.modLoad.initTab(this.swfUrl,this.pDB.getIntPref('remapPort'),this.pDB.getPref('defaultUserAgent'),this.currentASD.swfData.avm2,force);
+		    	}
+		    }
+		]]>
+	</fx:Script>
+	
+</s:WindowedApplication>

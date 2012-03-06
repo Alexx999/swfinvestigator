@@ -1,0 +1,47 @@
+<html>
+<!-- /****************************************************************************
+ * ADOBE SYSTEMS INCORPORATED
+ * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+ * All Rights Reserved.
+ *  
+ * NOTICE: Adobe permits you to use, modify, and distribute this file
+ * in accordance with the terms of the license agreement accompanying it.
+ * ****************************************************************************/  -->
+ <head>
+  <title>Fake SWFIntruder Loader</title>
+  <script type="text/javascript" src="AIRAliases.js"></script>
+  <script type="text/javascript">
+  	var swfData = {};
+  	var Exposed = {};
+ 	Exposed.displayTrace = function(str){air.trace(str);};
+ 	Exposed.addItem = function(command,args){swfData.initArray(command,args);};
+
+ 	function engageBridge() {
+ 	   document.getElementById("mashupUI").contentWindow.parentSandboxBridge = Exposed;
+ 	}
+ 	
+ 	function fetchVariable(str) {
+ 		return(document.getElementById("mashupUI").contentWindow.childSandboxBridge.getVariable(str));
+ 	}
+ 	
+ 	function fetchAS3Variable(str,action,args) {
+ 		return(document.getElementById("mashupUI").contentWindow.childSandboxBridge.getVariable(str,action,args));
+ 	}
+  </script>
+  <style type="text/css">
+  div {width:400px;height:450px;}
+  </style>
+ </head>
+ <body>
+  	<div id="mapper"></div>
+ 	<script type="text/javascript"> 	  
+ 	  function writeLSOMap() {
+ 		var div = document.getElementById("mapper");
+ 		var frameString = '<iframe id="mashupUI" height="400" width="450" src="' + swfData.SWFLocation + '" documentRoot="' + swfData.documentRoot + '" sandboxRoot="'+ swfData.sandboxRoot + '"/>';
+		div.innerHTML = frameString;
+ 	  }
+ 	  
+ 	  window.setTimeout(engageBridge,2000);
+ 	 </script>
+ </body>
+</html>

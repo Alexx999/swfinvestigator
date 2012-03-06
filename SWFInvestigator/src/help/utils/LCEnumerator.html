@@ -1,0 +1,75 @@
+ <HTML>
+ <!-- 
+ /****************************************************************************
+ * ADOBE SYSTEMS INCORPORATED
+ * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+ * All Rights Reserved.
+ *  
+ * NOTICE: Adobe permits you to use, modify, and distribute this file
+ * in accordance with the terms of the license agreement accompanying it.
+ * ****************************************************************************/
+-->
+  <HEAD>
+    <TITLE>LC Communicator</TITLE>
+    <LINK REL=StyleSheet HREF="../assets/fonts.css" TYPE="text/css">
+  </HEAD>
+  <BODY>
+    <H3>LC Communicator</H3>
+    <P> The Local Connection Communicator allows you to dynamically send or receive
+    data to and from Local Connections on any given domain.To begin using the LC
+    Communicator, enter the domain you will be sending your local connections from
+    and click <I>Re-Map</I>.  Then choose to either the <I>LC Sender</I> or
+    <I>LC Receiver</I> tab to begin sending or receiving data.
+    </P><BR/>
+    
+    <B>LC Sender</B>
+    <P>Once you have remapped the LC Communicator to the domain you will be sending
+    from, you need to provide information on the connection that you will be sending
+    data to.  The first field is the connection name.  If you are sending data to a
+    local connection that is on the same domain and as the LC Communicator, then you
+    do not need to prefix the connection name with the target domain.  If you will be
+    sending data to a different domain, then you need to prefix the connection name
+    with the target domain in the same format as you would in ActionScript
+    (<I>domain:connectionName</I> or just <I>connectionName</I>). Once you have
+    entered the name of the connection, you then enter the target function.<BR/>
+    You can then add variables to the data grid representing the data you plan to send.
+    Just like with the <a href="../Tabs/Inspector.html">AS3 Inspector</a> utility,
+    you enter the value of the variable in the text box below the data grid and select
+    the type of the variable.  Then click <I>Add Parameter</I> to add the variable to
+    the list of items that will be sent.  Once you have added all the items, you can
+    click <I>Send</I> to send the data.<BR/><BR/>
+    
+    <B>Note:</B> The utility works better if the receiving connection is already set
+    up before you click send.<BR/>
+    </P><BR/>
+    
+    <B>LC Receiver</B>
+    <P>
+    To receive connections, select the <I>LC Receiver</I> tab. Enter the connection
+    name in the same format as described for the <I>LC Sender</I> tab.  You then can
+    specify the receiving function name. You can also specify the <i>allowDomain</i>
+    setting. However, this may be unnecessary if you have already re-mapped the LC
+    Communicator to the target domain.  Click <I>Add Function</I> to start the
+    listener.  You are now ready to start receiving Local Connections for that function.
+    To stop receiving connections, close the <I>LC Communicator</I>.
+    </P>
+    
+    <B>LC Fuzzer</B>
+    <P>The LC Fuzzer started as a thought experiment. As a fuzzer, you are unlikely to
+    find much in a target SWF. However, the LC fuzzer allows you to send multiple
+    sequential messages across a Local Connection which is more useful for testing.
+    It will be re-built specifically for this purpose at a later date.<BR/>
+    You set up the connection the same that you set up a connection for the <I> LC
+    Receiver</I>. However, on this tab you have the option of choosing which of the
+    fields you want fuzzed. The output from the fuzzing effort will be show in the
+    <I>Fuzzer Output</I> tab. You can provide also provide a custom
+    <a href="fuzz.html">fuzz.xml</a> file.</P>
+    
+    <B>Fuzzer Output</B>
+    <P>This tab is used to display the output of an <I>LC Fuzzer</I> run. The left
+    had pane will allow you to navigate through the results. The right hand pane will
+    show whether the Local Connection was successfully received or not. Local
+    Connection's do not return much in the way of status to the sender, therefore the
+    output pane can only show you whether the message was successfully received or not.</P>  
+  </BODY>
+</HTML>

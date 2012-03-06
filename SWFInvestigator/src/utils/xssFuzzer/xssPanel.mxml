@@ -1,0 +1,600 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Window xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  width="751" height="689" title="XSS Fuzzer" backgroundColor="#60f3ea" showStatusBar="false" close="onClose()" windowComplete="onOpen()">
+	<fx:Script>
+		<![CDATA[
+			/****************************************************************************
+			 * ADOBE SYSTEMS INCORPORATED
+			 * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+			 * All Rights Reserved.
+			 *  
+			 * NOTICE: Adobe permits you to use, modify, and distribute this file
+			 * in accordance with the terms of the license agreement accompanying it.
+			 * ****************************************************************************/	
+			
+			import Fuzzer.FuzzerDB;
+			import Fuzzer.FuzzerLogger;
+			
+			import databaseUtils.PreferencesDB;
+			
+			import mx.controls.Alert;
+			
+			import osUtils.FileActionEvent;
+			import osUtils.FileActions;
+			import osUtils.WebServer;
+			import osUtils.WebServerEvent;
+			
+			[Bindable]
+			[Embed(source="assets/fuzzer/ErrorImage.jpg")] 
+			public var errorIcon:Class;
+			
+			/**
+			 * @public
+			 * A pointer to the preferences database
+			 */
+			public var prefDB:PreferencesDB;
+			
+			/**
+			 * @private
+			 * Log the results of the fuzzing effort
+			 */
+			private var fuzzLog:FuzzerLogger;
+			
+			/**
+			 * @private
+			 * A pointer to a FileActions reference
+			 */
+			private var stringsFile:FileActions;
+			
+			/**
+			 * @private
+			 * The dictionary Array
+			 */
+			private var attackStrings:Array;
+			
+			/**
+			 * @private
+			 * A pointer to a FileActions reference
+			 */
+			private var descriptionsFile:FileActions;
+			
+			/**
+			 * @private
+			 * The XML from the definitions file
+			 */
+			private var descriptions:XML;
+			
+			/**
+			 * @private
+			 * The position within the attackStrings array
+			 */
+			private var stringPos:int = -1;
+			
+			/**
+			 * @private
+			 * Tracks the Flash Vars
+			 */
+			private var fVarTracker:Array;
+			
+			/**
+			 * @private
+			 * The position within the FlashVarTracker
+			 */
+			private var varPos:int = 0;
+			
+			/**
+			 * @private
+			 * Whether the last request pinged back;
+			 */
+			private var gotPing:Boolean = false;
+			
+			/**
+			 * @private
+			 * The timer driving the identification process
+			 */
+			private var reloadTimer:Timer;
+			
+			/**
+			 * @private
+			 * The web server for cross-site flashing tests
+			 */
+			private var webServer:WebServer;
+			
+			/**
+			 * @private
+			 * The default port for remapping content
+			 */
+			private var defaultPort:String = "9009";
+			
+			/**
+			 * @private
+			 * Initialize the domain and default port from the preferences DB on windowComplete
+			 */
+			private function onOpen():void {
+				this.defaultDomain.text = this.prefDB.getPref("fuzzingDomain");
+				if (this.defaultDomain.text == "") {
+					this.defaultDomain.text = "http://www.example.com";
+				}
+				
+				this.defaultPort = this.prefDB.getIntPref("remapPort").toString();
+				if (this.defaultPort == "-1") {
+					this.defaultPort = "9009";
+				}
+				
+				this.attackStringFile.text = this.prefDB.getPref("xssStrings");
+				if (this.attackStringFile.text == "") {
+					this.attackStringFile.text = "app:/configs/xssStrings.txt";
+				}
+				
+				this.descriptionsLocation.text = this.prefDB.getPref("xssDescriptions");
+				if (this.descriptionsLocation.text == "") {
+					this.descriptionsLocation.text = "app:/configs/xssDescriptions.xml";
+				}
+			}
+			
+			/**
+			 * @private
+			 * Initialize's stringsFile for the first use
+			 * 
+			 * @return A boolean indicating whether the file was found
+			 */
+			private function loadStringFile():Boolean {
+				if (this.stringsFile != null) {
+					return true;
+				}
+				this.stringsFile = new FileActions();
+				this.stringsFile.currentFile = new File(this.attackStringFile.text);
+				
+				if (this.stringsFile.currentFile == null) {
+					return false;
+				}
+				
+				this.stringsFile.addEventListener(FileActionEvent.OPEN_RO_COMPLETE,grabStringsLocation);
+				this.stringsFile.openStream(FileActions.READ);
+				
+				return true;
+			}
+			
+			/**
+			 * @private
+			 * Initialize's descriptions for the first use
+			 * 
+			 * @return A boolean indicating whether the file was found
+			 */
+			private function loadDescriptionsFile():Boolean {	
+				if (this.descriptionsFile != null) {
+					return true;
+				}
+				this.descriptionsFile = new FileActions();
+				this.descriptionsFile.currentFile = new File(this.descriptionsLocation.text);
+				
+				if (this.descriptionsFile.currentFile == null) {
+					return false;
+				}
+				
+				this.descriptionsFile.addEventListener(FileActionEvent.OPEN_RO_COMPLETE,grabDefinitionsLocation);
+				this.descriptionsFile.openStream(FileActions.READ);
+				
+				return true;
+			}
+			
+			/**
+			 * private
+			 * Ensures the webServer socket is closed
+			 */
+			private function onClose():void {
+				if (this.webServer != null) {
+					this.webServer.close();
+				}
+			}
+			
+			/**
+			 * @private
+			 * Sets the text box to the File Location of the dictionary file
+			 * 
+			 * @param evt The FileActionEvent
+			 */
+			private function grabSWFLocation(evt:FileActionEvent):void {
+				this.swfLocation.text = evt.target.currentFile.url;
+				evt.target.closeFile();
+			}
+			
+			/**
+			 * @private
+			 * This function creates the popUp window to select the SWF file
+			 */
+			private function onBrowseSWF():void {
+				var swfAction:FileActions = new FileActions();
+				swfAction.currentFile = File.documentsDirectory;
+				var fFilter:FileFilter = new FileFilter("SWF file","*.swf");
+				swfAction.addEventListener(FileActionEvent.OPEN_RO_COMPLETE,grabSWFLocation);
+				swfAction.openFile(fFilter,FileActions.READ);
+			}
+			
+			/**
+			 * @private
+			 * Assigns the text box to the File Location of the dictionary file
+			 * 
+			 * @param evt The FileActionEvent
+			 */
+			private function grabStringsLocation(evt:FileActionEvent):void {
+				this.attackStringFile.text = evt.target.currentFile.url;
+				this.attackStrings = evt.target.readAsDictionary();
+				evt.target.closeFile();
+			}
+			
+			/**
+			 * @private
+			 * This function creates the popUp window to select the dictionary file
+			 */
+			private function onBrowseStrings():void {
+				if (this.stringsFile == null) {
+					this.stringsFile = new FileActions();
+					this.stringsFile.currentFile = File.applicationDirectory.resolvePath("configs");
+					this.stringsFile.addEventListener(FileActionEvent.OPEN_RO_COMPLETE,grabStringsLocation);
+				} 
+				var fFilter:FileFilter = new FileFilter("Text file","*.txt;*.dict");
+				this.stringsFile.openFile(fFilter,FileActions.READ);
+			}
+			
+			/**
+			 * @private
+			 * Assigns the text box to the File Location of the dictionary file
+			 * 
+			 * @param evt The FileActionEvent
+			 */
+			private function grabDefinitionsLocation(evt:FileActionEvent):void {
+				this.descriptionsLocation.text = evt.target.currentFile.url;
+				var ba:ByteArray = new ByteArray();
+				evt.target.readAllBytes(ba);
+				var xml:String = ba.toString();
+				evt.target.closeFile();
+				this.descriptions = new XML(xml);
+				evt.target.closeFile();
+			}
+			
+			/**
+			 * @private
+			 * This function creates the popUp window to select the dictionary file
+			 */
+			private function onBrowseDefinitions():void {
+				if (this.descriptionsFile == null) {
+					this.descriptionsFile = new FileActions();
+					this.descriptionsFile.currentFile = File.applicationDirectory.resolvePath("configs");
+					this.descriptionsFile.addEventListener(FileActionEvent.OPEN_RO_COMPLETE,grabDefinitionsLocation);
+				} 
+				var fFilter:FileFilter = new FileFilter("XML file","*.xml;");
+				this.descriptionsFile.openFile(fFilter,FileActions.READ);
+			}
+			
+			/**
+			 * @private
+			 * Parse the FlashVars provided in the text field by splitting on "&" and then "="
+			 */
+			private function parseFlashVars():void {
+				this.fVarTracker = null;
+				this.fVarTracker = new Array();
+				
+				var tmpArray:Array = this.flashVars.text.split("&");
+				var i:uint = 0;
+				var obj:Object = new Object();
+				for (i = 0; i < tmpArray.length; i++) {
+					var pair:Array = tmpArray[i].split("=");
+					var tmp:Object = new Object();
+					tmp.name = pair[0];
+					tmp.original = pair[1];
+					fVarTracker.push(tmp);
+				}
+			}
+			
+			/**
+			 * @private
+			 * Constructs the attack FlashVar string
+			 */
+			private function getNextFlashVarString():String {
+				var i:int = 0;
+				var outputString:String = new String();
+				
+				this.stringPos++;
+				
+				if (this.stringPos == this.attackStrings.length) {
+					this.varPos++;
+					this.stringPos = 0;
+				} else if ((this.varPos == this.fVarTracker.length - 1) && (this.stringPos == this.attackStrings.length -1 )) {
+					var finalTimer:Timer = new Timer(this.timerValue.value,1);
+					finalTimer.addEventListener(TimerEvent.TIMER,stopAndReset);
+					finalTimer.start();
+				}
+				
+				for (i = 0; i < this.fVarTracker.length; i++) {
+					if (i == this.varPos) {
+						outputString += "&" + this.fVarTracker[i].name + "=" + this.attackStrings[this.stringPos];
+					} else {
+						outputString += "&" + this.fVarTracker[i].name + "=" + this.fVarTracker[i].original;
+					}
+				}
+				
+				return (outputString.substr(1));
+			}
+			
+			/**
+			 * @private
+			 * Receives the ping back from the execution
+			 * 
+			 * @param ID The ID of the attack
+			 */
+			private function receivePingBack():void {
+				this.gotPing = true;
+				if ((this.stringPos < 0) || (this.stringPos == 0 && this.varPos > 0)) {
+					this.fuzzLog.addSlotEntry(this.fVarTracker[this.varPos].name,"String");
+				}
+				
+				var info:String;
+				var node:XMLList = descriptions.description.(@id == this.attackStrings[this.stringPos]);
+				var item:XML;
+				for each (item in node) {
+					info = item.toString();
+				}
+				if (info == null) {
+					info = "XSS Identified!";
+				}
+				this.fuzzLog.addResult(this.fVarTracker[this.varPos].name, this.attackStrings[this.stringPos],info,"errorIcon");
+			}
+			
+			/**
+			 * @private
+			 * Initializes the JavaScript within the template page with the appropriate value
+			 * 
+			 * @param e The event fired when the HTML page is finished loading.
+			 */ 
+			private function setViewerBridge (e:Event):void {
+				if (e.currentTarget.window.bridgeInterface != null) {
+					var remapDomain:String = this.defaultDomain.text + ":" + this.defaultPort;
+					e.currentTarget.window.bridgeInterface.src = remapDomain + "/temp.swf";
+					if (this.allowScriptAccessBox.selected) {
+						e.currentTarget.window.bridgeInterface.allowScriptAccess = "always";
+					} else {
+						e.currentTarget.window.bridgeInterface.allowScriptAccess = "sameDomain";
+					}
+					e.currentTarget.window.bridgeInterface.remapDomain = remapDomain;
+					e.currentTarget.window.bridgeInterface.allowNetworking = "all";
+					e.currentTarget.window.bridgeInterface.flashVars = this.getNextFlashVarString();
+					e.currentTarget.window.bridgeInterface.receivePingBack = this.receivePingBack;
+					e.currentTarget.window.writeViewerMap(remapDomain, "app-storage:/xssFuzzer/shim.html");
+				}
+			}
+			
+			/**
+			 * @private
+			 * Called by the timer event to start each new load request
+			 * 
+			 * @param evt The timer event
+			 */
+			private function sendRequest(evt:TimerEvent = null):void {
+				
+				if ((this.stringPos < 0) || (this.stringPos == 0 && this.varPos > 0)) {
+					this.fuzzLog.addSlotEntry(this.fVarTracker[this.varPos].name,"String");
+				}
+				
+				if (this.stringPos != -1 && this.gotPing == false) {
+					this.fuzzLog.addResult(this.fVarTracker[this.varPos].name, this.attackStrings[this.stringPos],"No XSS identified");
+				} else {
+					this.gotPing = false;
+				}
+				
+				this.swfLoader.htmlLoader.htmlHost = null;
+				this.swfLoader.htmlLoader.htmlHost = new HTMLHost();
+				this.swfLoader.htmlLoader.addEventListener(Event.COMPLETE,setViewerBridge);
+				this.swfLoader.htmlLoader.load(new URLRequest("app:/utils/xssFuzzer/sandboxLoader.html"));
+			}
+			
+			/**
+			 * @private
+			 * This function handles the final round of fuzzing and switches the panel
+			 */
+			private function stopAndReset(evt:TimerEvent = null):void {
+				if (this.gotPing == false) {
+					this.fuzzLog.addResult(this.fVarTracker[this.varPos].name, this.attackStrings[this.stringPos],"No XSS identified");
+				}
+				this.fuzzLog.createCollection();
+				this.webServer.close();
+				this.winTN.selectedIndex = 1;
+			}
+			
+			/**
+			 * @private
+			 * This function will send the AMF request to the remote server based on the entered information.
+			 */
+			private function startFuzzing():void {
+				if (this.swfLocation.text == "") {
+					mx.controls.Alert.show("Please select a file","Error", 4, this);
+				}
+				
+				var destination:File = File.applicationStorageDirectory;
+				destination = destination.resolvePath("xssFuzzer/temp.swf");
+				var sourceFile:File = new File(this.swfLocation.text);
+				sourceFile.copyTo(destination, true);
+				
+				if (this.attackStringFile.text == "") {
+					mx.controls.Alert.show("Please select a dictionary","Error", 4, this);
+					return;
+				} else if (this.attackStrings == null) {
+					if (!loadStringFile()) {
+						mx.controls.Alert.show("Could not find dictionary","Error", 4, this);
+						return;
+					}
+				}
+				
+				if (this.descriptionsLocation.text == "") {
+					mx.controls.Alert.show("Please select an attack descriptions file","Error", 4, this);
+					return;
+				} else if (this.descriptions == null) {
+					if (!loadDescriptionsFile()) {
+						mx.controls.Alert.show("Could not find attack descriptions file","Error", 4, this);
+						return;
+					}
+				}
+				
+				if (this.defaultDomain.text.length < 12) {
+					mx.controls.Alert.show("Please specify the domain and protocol for the default domain.","Error", 4, this);
+					return;
+				}
+				
+				try {
+					if (this.webServer == null) {
+						this.webServer = new WebServer("app-storage:/fuzzerServer/");
+					}
+					this.webServer.close();
+					this.webServer.listen();
+				} catch (e:WebServerEvent) {
+					mx.controls.Alert.show("Can't start web server","Error", 4, this);
+					return;
+				}
+				
+				this.fuzzLog = new FuzzerLogger();
+				
+				if (this.flashVars.text.indexOf("=") < 0) {
+					mx.controls.Alert.show("Please provide FlashVars","Error", 4, this);
+					return;
+				}
+				
+				this.parseFlashVars();
+
+				this.gotPing = false;
+				this.stringPos = - 1;
+				this.varPos = 0;
+				
+				
+				if (this.reloadTimer == null) {
+					this.reloadTimer = new Timer(this.timerValue.value,this.attackStrings.length * this.fVarTracker.length);
+					this.reloadTimer.addEventListener(TimerEvent.TIMER,sendRequest);
+				} else {
+					this.reloadTimer.reset();
+					this.reloadTimer.delay = this.timerValue.value;
+					this.reloadTimer.repeatCount = this.attackStrings.length * this.fVarTracker.length;
+				}
+				this.reloadTimer.start();
+			}
+			
+			/**
+			 * @private
+			 * Called by the results panel when someone selects an item in the tree, it decides what to put in the resultOutput box based on the selection.
+			 * 
+			 * @param evt The tree selection event.
+			 */
+			private function treeSelect(evt:Event):void {
+				var node:XML = Tree(evt.target).selectedItem as XML;
+				this.resultOutput.setStyle("font-weight","normal");
+				if (node.@type.indexOf("slot") == 0) {
+					this.resultOutput.text = "";
+				} else if (node.@type.indexOf("result") == 0) {
+					this.resultOutput.text = node.@data.toString();
+				}
+			}
+			
+			/**
+			 * @private
+			 * Initializes the Navigator tab on view.
+			 */
+			private function initNavigator():void {
+				if (this.fuzzLog != null) {
+					this.resultTree.dataProvider = this.fuzzLog.logData;
+					this.resultTree.labelFunction = this.fuzzLog.logTreeLabel;
+					this.resultOutput.text = "";
+					this.resultOutput.setStyle("font-weight","normal");
+				} else {
+					this.resultTree.dataProvider = null;
+					this.resultOutput.text = "No data from a fuzzing run available";
+					this.resultOutput.setStyle("font-weight","bold");
+				}
+				
+			}
+			
+			/**
+			 * @private
+			 * Display error from File Action Event
+			 */
+			private function displayError(e:FileActionEvent):void {
+				mx.controls.Alert.show(e.message,"Error",4,this);
+			}
+			
+			/**
+			 * @private
+			 * Prompt where to save the data
+			 */
+			private function saveResponse():void {
+				var fActions:FileActions = new FileActions();
+				fActions.currentFile = File.documentsDirectory.resolvePath("/");
+				fActions.addEventListener(FileActionEvent.GENERAL_ERROR, displayError);
+				fActions.addEventListener(FileActionEvent.IO_ERROR, displayError);
+				fActions.addEventListener(FileActionEvent.CREATE_COMPLETE, saveFile);
+				
+				fActions.openFile(null,FileActions.CREATE,"foo.xml");
+			}
+			
+			/**
+			 * @private
+			 * Write data to the file
+			 * 
+			 * @param e The FileActionEvent
+			 */
+			private function saveFile(e:FileActionEvent):void {
+				e.target.writeString(this.fuzzLog.logXML.toXMLString());
+				e.target.closeFile();
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:TabNavigator id="winTN" visible="true" x="8" y="21" width="733" height="656">
+		<s:NavigatorContent label="Setup" width="100%" height="100%" tabIndex="0">
+			<s:Group>
+				<s:Label x="21" y="5" text="Target SWF"/>
+				<s:TextInput id="swfLocation" x="21" y="20" width="580" editable="false" toolTip="Use the button on the right to specify the SWF Location"/>
+				<s:Button x="614" y="20" label="Load SWF" click="onBrowseSWF()"/>
+				<s:Label x="22" y="53" text="FlashVars"/>
+				<s:TextInput id="flashVars" x="21" y="67" width="580" toolTip="Use the format: foo=1&amp;bar=2"/>
+				<s:Label x="21" y="100" text="Attack String File"/>
+				<s:TextInput id="attackStringFile" x="21" y="111" width="580" text="app:/configs/xssStrings.txt" editable="false"
+							 toolTip="Use the button on the right to select a different file."/>
+				<s:Button x="614" y="111" label="Load Strings" click="onBrowseStrings()"/>
+				<s:Label x="21" y="144" text="Attack Descriptions File"/>
+				<s:TextInput id="descriptionsLocation" x="21" y="155" width="580" text="app:/configs/xssDescriptions.xml" editable="false"
+							 toolTip="Use the button on the right to select a different file."/>
+				<s:Button x="613" y="155" label="Load Results" click="onBrowseDefinitions()"/>
+				<s:Label x="24" y="197" text="Default Domain:"/>
+				<s:TextInput x="121" y="190" width="184" id="defaultDomain" text="http://www.example.com"
+							 toolTip="If necessary, change to the domain of the SWF if you need to load child assets during the test. Do not include a trailing slash."/>
+				<s:CheckBox id="allowScriptAccessBox" x="405" y="193" label="Set allowScriptAccess to always"/>
+				<s:Label x="24" y="229" text="Timeout for each test:"/>
+				<s:NumericStepper x="157" y="223" value="5000" width="74.5" height="22" id="timerValue" minimum="3000" stepSize="10" enabled="true" maximum="10000"/>
+				<s:Button x="259" y="224" label="Start Fuzzing" click="startFuzzing()"/>
+				<s:BorderContainer borderStyle="solid" borderColor="#B7BABC" id="swfLoadBox" alpha="1.0"
+					   top="258" left="20" bottom="-370" right="0" dropShadowVisible="true">
+					<mx:HTML id="swfLoader" y="10" width="100%" height="100%" textAlign="center"/>
+				</s:BorderContainer>
+			</s:Group>
+		</s:NavigatorContent>
+		<s:NavigatorContent id="outputTab" label="Output" width="100%" height="100%" tabIndex="0" show="initNavigator()">
+			<s:Group>
+				<s:HGroup x="16" y="0" width="687" height="592" verticalAlign="middle">
+					<mx:Tree id="resultTree" y="7" height="575" width="267" change="this.treeSelect(event)" iconField="@icon"
+							 folderClosedIcon="@Embed(source='/assets/fuzzer/ResultImage.jpg')"
+							 folderOpenIcon="@Embed(source='/assets/fuzzer/ResultImage.jpg')"
+							 defaultLeafIcon="@Embed(source='/assets/fuzzer/SuccessImage.jpg')"/>						
+					<s:VGroup width="482" height="572" verticalCenter="0">
+						<!--<s:HGroup width="415" height="31" horizontalAlign="right" verticalCenter="middle">
+							<s:Label width="109" x="6" id="searchOutput"/>
+							<s:TextInput id="resultSearchText" width="214" click="this.resultSearchButton.label='Find'"/>
+							<s:Button id="resultSearchButton" label="Find" click="resultSearch()"/>
+						</s:HGroup>-->
+						<s:Label text="Results"/>
+						<s:TextArea id="resultOutput" width="416" height="554" color="#FFFFFF" contentBackgroundColor="#000000"/>
+					</s:VGroup>
+				</s:HGroup>
+				<s:Button label="Save Test Log" click="saveResponse()" x="607" y="592"/>
+			</s:Group>
+		</s:NavigatorContent>
+	</mx:TabNavigator>
+</s:Window>

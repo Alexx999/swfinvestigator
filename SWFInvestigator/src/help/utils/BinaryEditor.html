@@ -1,0 +1,60 @@
+ <HTML>
+ <!-- 
+ /****************************************************************************
+ * ADOBE SYSTEMS INCORPORATED
+ * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+ * All Rights Reserved.
+ *  
+ * NOTICE: Adobe permits you to use, modify, and distribute this file
+ * in accordance with the terms of the license agreement accompanying it.
+ * ****************************************************************************/
+-->
+  <HEAD>
+    <TITLE>Binary Editor</TITLE>
+    <LINK REL=StyleSheet HREF="../assets/fonts.css" TYPE="text/css">
+  </HEAD>
+  <BODY>
+    <H3>Binary Editor</H3>
+    <P>The Binary Editor allows you to do two things. It allows you to open a local file and edit it. It also allows
+    you to convert a string of integers into a hex representation of bytes.
+	</P>
+	
+	<B>Source Data</B><BR>
+	<P>In this text field you can put a string of integers to convert. It will accept two basic formats. The first is a
+	string of Integers in the format <I>"12345678, 87654321"</I>. Do not include the parenthesis. If you use this format,
+	then you would click the <I>Convert Integers to Hex</I> button.</P>
+	<P>The second format allowed is a hex format. The hex characters can be entered several ways including
+	<I>"0x44445555", "44555544", "44,55" or "0x44,0x55"</I>. Do not include the parenthesis. If you use this format, then
+	you would click the <I>Copy Hex To Grid</I> button.</P>
+	
+	<B>Load a File</B><BR/>
+	<P>The <I>Load a file</I> button will open a file chooser that will allow you to select a file for editing.
+	Alternatively, you can also drag a file from the file system into the hex editor.</P> 
+	
+	<B>Find functionality</B><BR/>
+	<P>You can enter text into the text field above the right hand corner of the hex grid, choose whether to search
+	for a string or hex from the pull down menu and then click <I>Find</I> to find data within the hex grid.</P>
+	
+	<B>Compress</B><BR/>
+	<P>This button allows you to compress the current byte array using the AS compress function.</P>
+	
+	<B>Uncompress</B><BR/>
+	<P>This button allows you to uncompress the current byte array using the AS uncompress function.</P>
+	
+	<B>XOR</B><BR/>
+	<P>You can XOR all the bytes in the array by providing an integer in the text field and clicking XOR. The text box
+	supports traditional integers as well as hex values in a "0xAA" format.</P>
+	
+	<B>Save</B><BR/>
+	<P>Once you are done editing within the hex grid, you can click <I>Save</I> to save the file to the filesystem</P>
+	
+	<B>Copying and deleting data from the grid</B><BR/>
+    <P>You can select multiple cells from the data grid and use Ctrl-C to copy the data to the system clipboard.
+    To select a range of cells, you do not need to highlight each individual cell. You can just highlight the first and
+    last cell to be copied. The hex digits will be copied to the clipboard as comma separated string data
+    e.g. de,ad,be,ef  The commands Ctrl-X and Ctrl-V work in a similar fashion. In order for a paste to work, the data
+    must be in the same string format as used with Ctrl-C. If you use Ctrl-A to select all, only the binary data will
+    be copied to the clipboard. The "offset","string" and space columns will not be copied. 
+    </P>
+  </BODY>
+</HTML>

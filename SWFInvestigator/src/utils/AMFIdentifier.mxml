@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Window xmlns:fx="http://ns.adobe.com/mxml/2009"
+		   xmlns:s="library://ns.adobe.com/flex/spark"
+		   xmlns:mx="library://ns.adobe.com/flex/mx"
+		   width="408" height="565" title="AMF Identifier" close="closePopUp()" backgroundColor="#60f3ea" initialize="initAction()">
+	<fx:Script>
+		<![CDATA[
+			/****************************************************************************
+			 * ADOBE SYSTEMS INCORPORATED
+			 * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+			 * All Rights Reserved.
+			 *  
+			 * NOTICE: Adobe permits you to use, modify, and distribute this file
+			 * in accordance with the terms of the license agreement accompanying it.
+			 * ****************************************************************************/
+
+			import flash.net.registerClassAlias;
+			
+			import mx.rpc.AbstractOperation;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import osUtils.FileActionEvent;
+			import osUtils.FileActions;
+			
+			import databaseUtils.PreferencesDB;
+			
+			/**
+			 * @public
+			 * A pointer to the preferences database
+			 */
+			public var prefDB:PreferencesDB;
+			
+			/**
+			 * @private
+			 * A pointer to a FileActionsReference
+			 */
+			private var fAction:FileActions;
+			
+			/**
+			 * @private
+			 * The dictionary Array
+			 */
+			private var dict:Array;
+			
+			/**
+			 * @private
+			 * The position within the dictionary
+			 */
+			private var pos:uint;
+			
+			/**
+			 * @private
+			 * The timer driving the identification process
+			 */
+			 private var roTimer:Timer;
+			
+			/**
+			 * @private
+			 * Assigns the text box to the File Location of the dictionary file
+			 * 
+			 * @param evt The FileActionEvent
+			 */
+			private function grabFileLocation(evt:FileActionEvent):void {
+				this.dictFilePath.text = evt.target.currentFile.url;
+			}
+			
+			/**
+			 * @private
+			 * Initialize's fAction for first use
+			 */
+			private function initAction():void {
+				if (this.fAction != null) {
+					return;
+				}
+				this.fAction = new FileActions();
+				
+				var dictLoc:String = this.prefDB.getPref("amfDictionary");
+				if (dictLoc == "") {
+					dictLoc = "app:/configs/AMFDictionary.txt";
+				}
+				
+				this.fAction.currentFile = new File(dictLoc);
+				
+				if (this.fAction.currentFile == null) {
+					//The end-user probably changed their config
+					//This is just a convience task so it is their loss
+					return;
+				}
+				
+				this.fAction.addEventListener(FileActionEvent.OPEN_RO_COMPLETE,grabFileLocation);
+				this.fAction.openStream(FileActions.READ);
+			}
+			
+			/**
+			 * @private
+			 * This function creates the popUp window to select the dictionary file
+			 */
+			 private function onBrowseClick():void {
+				 if (this.fAction == null) {
+					 this.fAction = new FileActions();
+					 this.fAction.currentFile = File.applicationDirectory.resolvePath("configs");
+				 } 
+				 var fFilter:FileFilter = new FileFilter("Text file","*.txt;*.dict");
+				 this.fAction.addEventListener(FileActionEvent.OPEN_RO_COMPLETE,grabFileLocation);
+				 this.fAction.openFile(fFilter,FileActions.READ);
+			 }
+			 
+
+			
+			/**
+			 * @private
+			 * This function parses the response from the AMF call and displays it in the text field.
+			 * e.currentTarget.destination "restaurant"
+			 * e.currentTarget.operations.[MethodName]
+			 * @param e The ResultEvent from the AMF call.
+			 */
+			private function parseResponse(e:ResultEvent):void {
+				var result:String = "FOUND! The destination '" + e.currentTarget.destination + "' succeeded with '";
+				
+				for (var j:* in e.currentTarget.operations) {
+					result += j + "'\n";
+				}
+				
+				this.amfOutput.text = result + this.amfOutput.text;
+			}
+			
+			/**
+			 * @private
+			 * This function is called when the AMF call issues a FaultEvent.
+			 * 
+			 * @param e The FaultEvent from the AMF call
+			 * faultCode: Client.Error.MessageSend rootCause:Channel.Connect.Failed
+			 * e.fault.faultCode"Server.Processing" e.fault.faultString "No destination with id 'r'
+			 * e.fault.faultCode"Server.ResourceUnavailable" e.fault.faultString "Cannot invoke method 'g' e.faultDetail "Methods 'a' not found
+			 * e.faultDetail "0 arguments were sent but 1 were expected"
+			 */
+			private function showFault(e:FaultEvent):void {
+				if (e.fault.faultCode == "Client.Error.MessageSend") {
+					this.amfOutput.text += "Could not connect to server\n";
+				} else if (e.fault.faultCode == "Server.Processing") {
+					this.amfOutput.text += e.fault.faultString + "\n";
+				} else if (e.fault.faultCode == "Server.ResourceUnavailable") {
+					if (e.fault.faultDetail.indexOf("Method") == 0) {
+						if (this.rDest.selected) {
+							this.amfOutput.text = "FOUND destination '" + e.currentTarget.destination + "'!\n" + this.amfOutput.text;
+						} else {
+							this.amfOutput.text += e.fault.faultDetail + "\n";
+						}
+					} else if (e.fault.faultDetail.indexOf("0") == 0) {
+						var results:Array = e.fault.faultString.split("'");
+						this.amfOutput.text = "FOUND '" + results[1] + "'! - " + e.fault.faultDetail + "\n" + this.amfOutput.text;
+					}
+				}
+				return;
+			}
+			
+			/**
+			 * @private
+			 * This function creates a remoteObject and does this send
+			 * 
+			 * @param evt The timer event
+			 */
+			private function createRO (evt:TimerEvent):void {
+				var destName:String;
+				var fName:String;
+				
+				if (this.rMethod.selected) {
+					destName = this.roDestination.text;
+					fName = this.dict[this.pos];
+				} else {
+					destName = this.dict[this.pos];
+					fName = "getName";
+				}
+				pos--;
+				
+				var ro:RemoteObject = new RemoteObject(destName);
+				ro.endpoint = this.roEndpoint.text;
+								
+				var returnedData:Object;
+				ro.addEventListener(ResultEvent.RESULT,parseResponse);
+				ro.addEventListener(FaultEvent.FAULT,showFault);
+				
+				if (this.roUsername && this.roUsername.text.length > 0) {
+					if (this.remoteCreds.selected) {
+						ro.setRemoteCredentials(this.roUsername.text,this.roPassword.text);
+					} else {
+						ro.setCredentials(this.roUsername.text, this.roPassword.text);
+					}
+				}
+						
+				var roOp:AbstractOperation =  ro.getOperation(fName);
+				roOp.send();				
+			}
+			
+			
+			
+			/**
+			 * @private
+			 * This function will send the AMF request to the remote server based on the entered information.
+			 */
+			private function sendRequest():void {
+				this.amfOutput.text = "";
+				
+ 				if (this.dictFilePath.text == "") {
+ 					this.amfOutput.text = "PLEASE SELECT A DICTIONARY";
+ 					return;
+ 				} else if (this.fAction.fileState == "OPEN") {
+					this.dict = this.fAction.readAsDictionary();
+					this.fAction.closeFile();
+				}
+ 
+  				this.pos = this.dict.length - 1;
+
+				if (this.roTimer == null) {
+ 					this.roTimer = new Timer(this.timerValue.value,dict.length);
+	 				this.roTimer.addEventListener(TimerEvent.TIMER,createRO);
+	 				this.roTimer.addEventListener(TimerEvent.TIMER_COMPLETE,stopAndReset);
+ 				} else {
+ 					this.roTimer.delay = this.timerValue.value;
+ 					this.roTimer.repeatCount = dict.length;
+ 				}
+ 				this.roTimer.start();
+			}
+
+			/**
+			 * @private
+			 * This function stops and resets the timer
+			 */
+			private function stopAndReset(evt:TimerEvent = null):void {
+				roTimer.reset();
+			}
+			
+			/**
+			 * @private
+			 * On Window Close, ensure ObjectCollection PopUp is shut down.
+			 */
+			private function closePopUp():void {
+//				this.sendDG.closePopUp();
+			}
+		]]>
+	</fx:Script>
+	<s:Label x="10" y="15" width="101" text="RO Endpoint:"/>
+	<s:TextInput x="119" y="10" width="269" id="roEndpoint" maxChars="4096"
+				 toolTip="Example: http://www.example.com:8400/blazeds/messagebroker/amf"/>
+	<s:Label x="10" y="41" text="RO Destination:" width="101"/>
+	<s:TextInput x="119" y="36" width="269" id="roDestination" enabled="false"
+				 toolTip="Example: This would be the id in the destination tag of your remoting-config.xml or proxy-config.xml"/>
+	<s:Label x="10" y="70" text="Brute Force"/>
+	<s:RadioButton x="119" y="65.5" id="rDest" label="Destination" selected="true" groupName="BruteForceSelection" click="this.roDestination.enabled=false;"/>
+	<s:RadioButton x="215" y="65" id="rMethod" label="Method" groupName="BruteForceSelection" click="this.roDestination.enabled=true;"/>
+	<s:Label x="12" y="114" text="Auth Username:" width="101"/>
+	<s:TextInput x="10" y="130" width="147" id="roUsername"/>
+	<s:Label x="216" y="116" text="Auth Password:" width="101"/>
+	<s:TextInput x="213" y="130" width="147" id="roPassword"/>
+	<s:CheckBox x="10" y="165" label="Remote Credentials" width="147" id="remoteCreds"/>
+	<s:Label x="12" y="207.5" text="Dictionary File:"/>
+	<s:TextInput id="dictFilePath" x="10" y="222" width="304" height="22" editable="false"/>
+	<s:Button x="323" y="222" label="Browse" click="onBrowseClick()"/>
+	<s:Label x="10" y="276" text="Query interval (milliseconds):" width="165" height="19"/>
+	<s:NumericStepper x="213" y="270" value="330" width="74.5" height="22" id="timerValue" minimum="0" stepSize="10" enabled="true" maximum="5000"/>
+	<s:Button x="9" y="317" label="Start Queries" width="106.5" click="sendRequest()" height="22"/>
+	<s:Button x="129.5" y="317" label="Reset" click="stopAndReset()"/>
+	<s:Label x="10" y="362" text="Output" width="124"/>	
+	<s:TextArea x="10" y="378" width="378" height="132" id="amfOutput"/>
+	<s:Label x="10" y="528" text="status" width="368" id="statusOutput"/>
+</s:Window>

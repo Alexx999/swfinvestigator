@@ -1,0 +1,34 @@
+<HTML>
+<!-- 
+ /****************************************************************************
+ * ADOBE SYSTEMS INCORPORATED
+ * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+ * All Rights Reserved.
+ *  
+ * NOTICE: Adobe permits you to use, modify, and distribute this file
+ * in accordance with the terms of the license agreement accompanying it.
+ * ****************************************************************************/
+-->
+ <BODY>
+  <DIV id="targetDiv" style="font-family:fixed;white-space:pre;">
+  </DIV>
+  <SCRIPT type="text/javascript">
+  	function insertLiteral(literalString, targetElement)
+	{
+    	var textNode = document.createTextNode(literalString);
+    	targetElement.appendChild(textNode)
+    	return textNode;
+	}
+
+	// test it (for the example, I assume #targetDiv is there but empty)
+	//var xmlString = "<this><is_some><xml with='attributes' /></is_some></this>";
+	var xmlhttp = new XMLHttpRequest();
+	xmlhttp.open("GET", "fuzz.xml", false);
+	xmlhttp.setRequestHeader('Content-Type', 'text/xml');
+	xmlhttp.send("");
+	var xmlDoc = xmlhttp.responseText;
+	var targetElement = document.getElementById("targetDiv");
+	var xmlTextNode = insertLiteral(xmlDoc, targetElement);
+  </script>
+ </BODY>
+</HTML>

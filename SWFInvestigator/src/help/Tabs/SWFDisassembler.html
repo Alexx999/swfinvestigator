@@ -1,0 +1,39 @@
+<HTML>
+<!-- 
+ /****************************************************************************
+ * ADOBE SYSTEMS INCORPORATED
+ * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+ * All Rights Reserved.
+ *  
+ * NOTICE: Adobe permits you to use, modify, and distribute this file
+ * in accordance with the terms of the license agreement accompanying it.
+ * ****************************************************************************/
+-->
+  <HEAD>
+    <TITLE>SWF Disassembler</TITLE>
+    <LINK REL=StyleSheet HREF="../assets/fonts.css" TYPE="text/css">
+  </HEAD>
+  <BODY>
+    <H3>SWF Disassembler</H3>
+	<P>This will produce slightly different styles of output for AVM1 and AVM2 due to the back end library that
+	is being used (abcdump for AS3 and swfdump for AS2). The search box at the top will allow you to find key words
+	within the source dump.  For larger SWFs, the disassesmbly will be broken into pages to speed rendering.
+	The incrementor at the bottom of the disassembly view allows you to increment pages. Although, it is a little
+	counter-intuitive in that you currently click the up in order to scroll down. You can choose to view
+	the disassembly in your default '.txt' editor by clicking <I>'Open with Text Viewer'</I> at the bottom of the
+	page</P>
+	<P> Next to constants, you may see "//nameIndex=XX". This is added by the disassembler just to be able
+	cross-reference the string constant with the constant pool.</P>
+	<P>At the top of the page, you can choose to use a different decompiler or disassembler rather than the
+	internal version. This feature is only available if you installed SWF Investigator using a native installer.
+	If you installed SWF Investigator using a '.air' file, then this feature is not available.
+	You specify the location of the decompiler and the default arguments in your Preferences settings. The
+	arguments that will be used show up in the text field. You can modify the arguments if necessary within the
+	text field. Once you click update, the executable will be called and the output will show up in the display
+	pane.</P>
+	<B>Note For Mac Users</B><BR/>
+	<P>If you try to set up the Flex SDK version of swfdump in your decompiler list, then ensure that you have it
+	in a path without spaces. Please see the <a href="../general/preferences.html">preferences</a> page for more
+	information.</P>
+  </BODY>
+ </HTML>

@@ -1,0 +1,86 @@
+<html lang="en">
+<!-- 
+ /****************************************************************************
+ * ADOBE SYSTEMS INCORPORATED
+ * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+ * All Rights Reserved.
+ *  
+ * NOTICE: Adobe permits you to use, modify, and distribute this file
+ * in accordance with the terms of the license agreement accompanying it.
+ * ****************************************************************************/
+-->
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>getVars Wrapper</title>
+<script src="AC_OETags.js" type="text/javascript"/>
+<style>
+body { margin: 0px; overflow:hidden }
+</style>
+</head>
+
+<body scroll="no" BGCOLOR="#000000">
+<script language="JavaScript" type="text/javascript">
+<!--
+
+/*******
+**   getObject(element) 
+** calls Flash checkFlashObject method and gets the snapshot of an object
+** 
+*/
+function getObject(str){
+
+  var FlashObject= document.getVars.checkFlashObject(str,true);
+ 
+  if(typeof FlashObject=="undefined" ||typeof FlashObject=="null"  )
+    FlashObject='<'+typeof FlashObject+'></'+typeof FlashObject+'>'; 
+ 
+  return( FlashObject );
+}
+
+/*******
+** getVars_DoFSCommand(command, args) 
+** called by getVars.swf when parameters are undefined
+** 
+*/
+function getVars_DoFSCommand(command, args) {
+  window.parentSandboxBridge.addItem(command,args);
+}
+-->
+</script>
+<script language="JavaScript" type="text/javascript">
+<!--
+	// if we've detected an acceptable version
+	// embed the Flash Content SWF when all tests are passed
+	var URL = window.location.href;
+	var splitURL = URL.split("?");
+	var urlVars = splitURL[1];
+	var info = urlVars.split("#");
+	
+	var childExposed = {};
+	childExposed.getVariable = getObject;
+	window.childSandboxBridge = childExposed;
+
+	function foo() {
+		AC_FL_RunContent(
+			"src", info[0],
+			"FlashVars", info[1],
+			"width", "100%",
+			"height", "100%",
+			"align", "middle",
+			"id", "getVars",
+			"quality", "high",
+			"bgcolor", "#869ca7",
+			"name", "getVars",
+			"wmode", "opaque",
+			"allowScriptAccess", "sameDomain",
+			"type", "application/x-shockwave-flash",
+			"pluginspage", "http://www.adobe.com/go/getflashplayer"
+		);
+		
+	}
+	window.setTimeout(foo,2000);
+// -->
+</script>
+</body>
+</html>

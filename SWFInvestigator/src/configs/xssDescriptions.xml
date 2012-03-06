@@ -1,0 +1,84 @@
+<xssDescriptions>
+  <description id="javascript:sendPingBack();">
+XSS Identified! This attack probably worked because you are not
+performing data validation on the FlashVar URL you are providing
+to a getURL or navigateToURL call. One way to mitigate this attack
+is to verify that the url starts with 'http://' or 'https://'
+  </description>
+  <description id="sendPingBack">
+XSS Identified! This attack probably worked because you are not
+validating the FlashVar you are sending to the ExternalInterface.call
+function parameter. One way to mitigate this attack may be to ensure
+that the FlashVar matches a preset list of function names.
+  </description>
+  <description id="\&quot;+sendPingBack());}catch(e){sendPingBack();}//">
+XSS Identified! This attack probably works because you are not
+validating the FlashVar data you are providing to an
+ExternalInterface call. One way to mitigate this attack may be to
+ensure that the FlashVar does not contain any unexpected characters.
+  </description>
+  <description id="\&quot;));sendPingBack()}catch(e){sendPingBack();}//">
+XSS Identified! This attack probably works because you are not
+validating the FlashVar data you are providing to an ExternalInterface
+call. One way to mitigate this attack may be to ensure that the
+FlashVar does not contain any unexpected characters.
+  </description>
+  <description id="asfunction:getURL,javascript:sendPingBack();">
+XSS Identified! This attack probably worked because you are not
+performing data validation on the FlashVar URL you are providing to
+an ActionScript call. One way to mitigate this attack is to verify
+that the url starts with 'http://' or 'https://'
+  </description>
+  <description id="http://127.0.0.1:9081/ExternalInterfacePing.swf">
+XSS Identified! This attack probably worked because you are import
+loading (e.g. Loader.loadBytes) an untrusted SWF using the URL
+provided in the FlashVar. This attack may also work if you have
+allowScriptAccess set to always. Here are some things you can
+possibly do to mitigate this attack:
+    
+    * Set allowScriptAccess to sameDomain
+    * Only allow relativeURLs via FlashVars
+    * Use Loader.load instead
+    * If you are using Loader.loadBytes and you meant to load an
+    image, then set allowCodeImport to false on the LoaderContext
+  </description>
+  <description id="http://127.0.0.1:9081/NavigateToURLPing.swf">
+XSS Identified! This attack probably worked because you are import
+loading (e.g. Loader.loadBytes) an untrusted SWF using the URL
+provided in the FlashVar. This attack may also work if you have
+allowScriptAccess set to always. Here are some things you can
+possibly do to mitigate this attack:
+    
+    * Set allowScriptAccess to sameDomain
+    * Only allow relativeURLs via FlashVars
+    * Use Loader.load instead
+    * If you are using Loader.loadBytes and you meant to load an
+    image, then set allowCodeImport to false on the LoaderContext
+  </description>
+  <description id="http://127.0.0.1:9081/GetURLPing.swf">
+XSS Identified! This attack probably worked because you are import
+loading (e.g. Loader.loadBytes) an untrusted SWF using the URL
+provided in the FlashVar. This attack may also work if you have
+allowScriptAccess set to always. Here are some things you can
+possibly do to mitigate this attack:
+    
+    * Set allowScriptAccess to sameDomain
+    * Only allow relativeURLs via FlashVars
+    * Use Loader.load instead
+    * If you are using Loader.loadBytes and you meant to load an
+     image, then set allowCodeImport to false on the LoaderContext
+  </description>
+  <description id="http://127.0.0.1:9081/FSCommandPing.swf">
+XSS Identified! This attack probably worked because you are import
+loading (e.g. Loader.loadBytes) an untrusted SWF using the URL
+provided in the FlashVar. This attack may also work if you have
+allowScriptAccess set to always. Here are some things you can
+possibly do to mitigate this attack:
+    
+    * Set allowScriptAccess to sameDomain
+    * Only allow relativeURLs via FlashVars
+    * Use Loader.load instead
+    * If you are using Loader.loadBytes and you meant to load an
+    image, then set allowCodeImport to false on the LoaderContext
+  </description>
+</xssDescriptions>

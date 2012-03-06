@@ -1,0 +1,41 @@
+<HTML>
+<!-- 
+ /****************************************************************************
+ * ADOBE SYSTEMS INCORPORATED
+ * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+ * All Rights Reserved.
+ *  
+ * NOTICE: Adobe permits you to use, modify, and distribute this file
+ * in accordance with the terms of the license agreement accompanying it.
+ * ****************************************************************************/
+-->
+  <HEAD>
+    <TITLE>Mini Web Server</TITLE>
+    <LINK REL=StyleSheet HREF="../assets/fonts.css" TYPE="text/css">
+  </HEAD>
+  <BODY>
+    <H3>Mini Web Server</H3>
+    <P>
+    The Mini Web Server is an extremely basic web server for returning HTML and SWF content. It does not support any of the
+    advanced features of a real web server such as cookies, CGI support, etc. The server can return basic files with a
+    Content-type and Content-length header. Supported file extensions include .html, .htm, .js, .xml, .swf, .png, .jpg, .gif,
+    .css, .ico, .doc, .docx, .xls, .xlsx and .pdf. The server will shut down if you close the window.  
+    </P>
+    <B>Choosing the directory</B><BR/>
+    <P>The first thing you need to do is select the directory that will act as your root directory of the web server. All file
+    fetches will be relative to this directory.</P>
+    <B>Choosing the IP address and port</B><BR/>
+    <P>The next step is to choose the IP address and port the server will listen on. Using the defaults is probably fine for
+    most occasions. However, the XSS fuzzer also starts a web server so you may run into issues if you are trying to use both
+    at the same time. If you do want to run both simultaneously, then just choose a different port for the Mini Web Server.</P>
+    <B>Starting and stopping the server</B><BR/>
+    <P>Use the <I>Start Listening</I> and <I>Stop Listening</I> buttons to start and stop the web server. If the server is
+    already listening when you click the <I>Start Listening</I> button then it will shut down and start over.</P>
+    <B>Saving Preferences</B><BR/>
+    <P>The <I>Remember These Settings</I> button will all you to save the current configuration of to your preferences database.
+    </P>
+    <B>Status field</B><BR/>
+    <P>The status field will display information on whether the server is listening and any errors that are encountered as it
+    is running.</P>
+  </BODY>
+</HTML>

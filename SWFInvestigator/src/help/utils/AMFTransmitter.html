@@ -1,0 +1,37 @@
+<HTML>
+<!-- 
+ /****************************************************************************
+ * ADOBE SYSTEMS INCORPORATED
+ * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+ * All Rights Reserved.
+ *  
+ * NOTICE: Adobe permits you to use, modify, and distribute this file
+ * in accordance with the terms of the license agreement accompanying it.
+ * ****************************************************************************/
+-->
+  <HEAD>
+    <TITLE>AMF Transmitter</TITLE>
+    <LINK REL=StyleSheet HREF="../assets/fonts.css" TYPE="text/css">
+  </HEAD>
+  <BODY>
+    <H3>AMF Transmitter</H3>
+    <P>The AMF Transmitter allows you to query remote AMF Services and retrieve the result.  This feature is still experimental until a way is determined to
+    dynamically set Remote alias information for an object.
+    </P>
+    <P>The basic premise of the tool is that you specify the AMF URI, the destination name and the function you wish to call in the first three fields.  Then you
+    add any parameters that should be sent. You can set any creds that need to be sent with the connection.  The result of the query will display in the text box
+    at the bottom of the window.</P>
+    <B>RO Endpoint:</B><P>The URL of the AMF Gateway that has the function you are calling.</P>
+    <B>RO Destination:</B><P>The destination name that is to supplied to the RO Endpoint.</P>
+    <B>RO Function:</B><P>The name of the remote function that you will call.</P>
+    <B>Function Parameters/New Value:</B><P>This is where you add the parameters that will be sent across the AMF connection. This is similar to the functionality in
+    the <a href="../Tabs/Inspector.html">AS3 Inspectors</a>.  For information on how to add Classes and Objects, please click
+    <a href="../general/ObjectEntry.html">here</a>.</p>
+    <p>The text field at the top should include the class name that you would supply to a <i>registerClassAlias</i> call in ActionScript</p>
+    <B>Auth Information:</B><P>The username and password for the connection.  The <I>Remote Credentials</I> checkbox dictates whether the <I>RemoteObject.setCredentials</I>
+    or the <I>RemoteObject.setRemoteCredentials</I> function is used to set authentication information on the connection.</P>
+    <B>Submit Query:</B><P>The Submit Query button executes the call to the remote service.</P>
+    <B>Output:</B><P>This will contain the response from the remote query.</P>
+    <B>Save AMF Response:</B><P>This button allows you to save the response in an AMF file.</P>
+  </BODY>
+</HTML>

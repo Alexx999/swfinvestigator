@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:NavigatorContent xmlns:fx="http://ns.adobe.com/mxml/2009"
+		   xmlns:s="library://ns.adobe.com/flex/spark"
+		   xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%">
+	<fx:Script>
+		<![CDATA[
+			/****************************************************************************
+			 * ADOBE SYSTEMS INCORPORATED
+			 * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+			 * All Rights Reserved.
+			 *  
+			 * NOTICE: Adobe permits you to use, modify, and distribute this file
+			 * in accordance with the terms of the license agreement accompanying it.
+			 * ****************************************************************************/	
+
+			import mx.collections.ArrayCollection;
+		
+			[Bindable]
+            public var allowScriptAccessTypes:ArrayCollection = new ArrayCollection(
+                [ {label:"always", data:"always"}, 
+                  {label:"sameDomain", data:"sameDomain"},
+                  {label:"never", data:"never"} ]);
+
+			[Bindable]
+            public var allowNetworkingTypes:ArrayCollection = new ArrayCollection(
+                [ {label:"all", data:"all"}, 
+                  {label:"internal", data:"internal"},
+                  {label:"none", data:"none"} ]);
+                  
+            private var swfUrl:String;
+			
+			[Bindable]
+            private var viewerTemplate:String;
+			
+            private var remapPort:int;
+            private var uAgent:String;
+					    
+		    /**
+		     * @private
+		     * When the user selects allowScriptAccess > Never, reset the allowNetworking box to all.
+		     * 
+		     * @param The click event from the allowScriptAccess comboBox
+		     */
+		    private function resetNetworking(e:Event):void {
+		    	if (e.target.selectedIndex == 1 || e.target.selectedIndex == 0) {
+		    		this.allowNetworkingBox.selectedIndex = 0;
+		    	}
+		    }
+
+		    /**
+		     * @private
+		     * When the user selects allowNetworking < all, reset the allowScriptAccess box to Never.
+		     * 
+		     * @param The click event from the allowNetworking comboBox
+		     */		    
+		    private function resetScriptAccess(e:Event):void {
+		    	if (e.target.selectedIndex == 1 || e.target.selectedIndex == 2) {
+		    		this.allowScriptAccessBox.selectedIndex = 2;
+		    	}
+		    }
+		    
+		    /**
+			 * @private
+		     * Initializes the JavaScript within the template page with the appropriate value
+		     * 
+		     * @param e The event fired when the HTML page is finished loading.
+		     */ 
+		    private function setViewerBridge (e:Event):void {
+				if (e.currentTarget.window.bridgeInterface != null) {
+				   var domainInfo:Object = this.getDomain();
+				   e.currentTarget.window.bridgeInterface.src = this.urlText.text;
+				   e.currentTarget.window.bridgeInterface.allowScriptAccess = this.allowScriptAccessBox.selectedItem.label;
+				   e.currentTarget.window.bridgeInterface.allowNetworking = this.allowNetworkingBox.selectedItem.label;
+				   e.currentTarget.window.bridgeInterface.flashVars = this.vFlashVars.text;
+				   e.currentTarget.window.writeViewerMap(domainInfo.protocol + this.vDomain.text + ":" + this.remapPort.toString(), this.viewerTemplate);
+				}
+			}
+		    
+		    /**
+			 * @public
+		     * Called when the Viewer tab is selected, it initializes the Viewer
+		     * 
+		     * @param viewURL The string represnting the URL that will be viewed
+		     * @param button A boolean value regarding whether this was manually called
+		     * @param rPort The remote port to use for remapping the SWF viewer HTML page
+		     * @param vTemplate A string representing an alternative HTML template for loading the SWF.
+		     */
+		    public function initViewer(viewURL:String,button:Boolean,rPort:int,vTemplate:String,dUserAgent:String):void {
+		    	if (this.urlText == null) {
+		    		return;
+		    	}
+		    	
+		    	this.swfUrl = viewURL;
+		    	this.remapPort = rPort;
+		    	this.viewerTemplate = vTemplate;
+		    	this.uAgent = dUserAgent;
+		    	
+		    	if (button == false) {		  
+		    		this.urlText.text = this.swfUrl;
+		    		var temp:Object = this.getDomain();
+		    		this.vDomain.text = temp.domain;
+		    		this.allowScriptAccessBox.selectedIndex=2;
+		    		this.allowNetworkingBox.selectedIndex=2;
+		    		this.vTemplateBox.text = this.viewerTemplate;
+					this.loadButton.label = "Load";
+		    	}  	
+		    	if (viewURL != null && button) {
+					this.loadButton.label = "Reload";
+
+					if (this.sendCookies.selected == false) {
+						this.swfLoader.htmlLoader.manageCookies = false;
+					}
+					
+					this.swfLoader.htmlLoader.userAgent = dUserAgent;
+					
+					
+					if (this.urlText.text.indexOf("http") == 0) {
+						this.swfLoader.htmlLoader.htmlHost = new HTMLHost();
+						this.swfLoader.htmlLoader.addEventListener(Event.COMPLETE,setViewerBridge);
+						this.swfLoader.htmlLoader.load(new URLRequest("app:/Viewer/sandboxLoader.html"));
+						//this.vTemplateBox.enabled = true;
+					} else {
+						//this.vTemplateBox.enabled = false;
+						this.swfLoader.htmlLoader.placeLoadStringContentInApplicationSandbox = true;
+						var loadString:String = "<HTML><HEAD><SCRIPT SRC=\"app:/Viewer/AIRIntrospector.js\"/></HEAD><BODY id=\"bodyTemplate\">";
+						loadString += "<DIV><SCRIPT>air.Introspector.createOpenConsoleButton();</SCRIPT></DIV><BR><BR><BR>";
+						loadString += "<DIV ALIGN=\"CENTER\"><EMBED NAME=\"remoteSWF\" wmode=\"opaque\" ID=\"remoteSWF\" WIDTH=\"89%\" HEIGHT=\"89%\" SRC=\"" + this.urlText.text + "\" allowScriptAccess=\""+ this.allowScriptAccessBox.selectedItem.data +"\" allowNetworking=\"" + this.allowNetworkingBox.selectedItem.data + "\"/></DIV>";
+						loadString += "<SCRIPT type='text/javascript'>function remoteSWF_DoFSCommand(command, args){alert('FSCommand call -- Command: ' + command + ' -- Args: ' + args);}</SCRIPT>";
+						loadString += "</BODY></HTML>";
+						this.swfLoader.htmlLoader.loadString(loadString);
+					
+		    		}
+		    		
+		    	}
+		    }
+		    
+		    /**
+		     * @private
+		     * Get the current domain from the URL of the current SWF.
+		     * 
+		     * @return An object containing the parsed domain, protocol, and port info.
+		     */ 
+		    private function getDomain():Object {
+				var domainInfo:Object = new Object;
+				domainInfo.domain = "";
+				domainInfo.protocol = "";
+				domainInfo.port = "";
+				
+				if (this.swfUrl == null) { return(domainInfo); }
+				
+				if (this.swfUrl.indexOf("http://") == 0) {
+					domainInfo.protocol = "http://";
+		    		domainInfo.domain = this.swfUrl.substring(7,this.swfUrl.indexOf("/",7));
+		    	} else if (this.swfUrl.indexOf("https://") == 0) {
+		    		domainInfo.protocol = "https://";
+		    		domainInfo.domain = this.swfUrl.substring(8,this.swfUrl.indexOf("/",8));
+		    	}
+		    	
+		    	if (domainInfo.domain.indexOf(":") > 0) {
+		    		var temp:Array = domainInfo.domain.split(":");
+		    		domainInfo.domain = temp[0];
+		    		domainInfo.port = temp[1];
+		    	}
+		    	
+		    	return (domainInfo)
+			}
+			
+		]]>
+	</fx:Script>
+	<s:Label y="16" text="URL:" x="49" />
+	<s:TextInput y="10" width="519" id="urlText" x="95"
+				 toolTip="The SWF to be loaded in the browser pane below"/>
+	<s:Button y="10" id="loadButton" label="Reload" enabled="true" click="initViewer(this.urlText.text,true,this.remapPort,this.vTemplateBox.text,this.uAgent)" x="637"/>
+	<s:CheckBox y="49" label="Send Cookies?" selected="false" enabled="true" id="sendCookies" x="594"/>
+	<s:Label y="55" text="allowScriptAccess :" enabled="true" x="45" />
+	<s:DropDownList y="49" id="allowScriptAccessBox" dataProvider="{ this.allowScriptAccessTypes }" selectedIndex="2" change="resetNetworking(event)" x="160"
+					toolTip="This is the allowScriptAccess setting for the object tag."/>
+	<s:Label y="55" text="allowNetworking :" enabled="true" x="305" />
+	<s:DropDownList y="49" id="allowNetworkingBox" dataProvider="{ this.allowNetworkingTypes }" selectedIndex="2" change="resetScriptAccess(event)" x="413"
+					toolTip="This is the allowNetworking setting for the object tag. It can be reset based on the allowScriptAccess setting." />
+	<s:Label y="95" text="FlashVars :" x="47" />
+	<s:TextInput width="283" editable="true" id="vFlashVars" top="90" left="122"
+				 toolTip="(optional) The FlashVars to be provided in the object tag. (Example: foo=1&amp;bar=2)" />
+	<s:Label y="95" text="HTML Domain :" x="427" />
+	<s:TextInput y="90" width="176" id="vDomain" editable="true" x="526"
+				 toolTip="(optional) The SWF will be loaded into this domain by the browser pane. Example: http://www.example.com" />
+	<s:Label x="47" y="126" text="HTML Template" width="105" />
+	<s:TextInput id="vTemplateBox" x="160" y="120" width="542" text="{this.viewerTemplate}" enabled="false"
+				 toolTip="This is the template used to create the HTML page in the browser pane"/>
+	<s:BorderContainer borderStyle="solid" borderColor="#B7BABC" id="swfLoadBox" alpha="1.0" top="168" left="20" bottom="19" right="20" dropShadowVisible="true">
+		<mx:HTML id="swfLoader" y="10" width="100%" height="402" textAlign="center"/>
+	</s:BorderContainer>
+	<s:Label x="331" y="154" text="Browser"/>
+</s:NavigatorContent>

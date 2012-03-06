@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Window xmlns:fx="http://ns.adobe.com/mxml/2009"
+		   xmlns:s="library://ns.adobe.com/flex/spark"
+		   xmlns:mx="library://ns.adobe.com/flex/mx"
+		   xmlns:ParamHandlers="ParamHandlers.*"
+		   width="801" height="581" title="AMF Transmitter" close="closePopUp()" backgroundColor="#60f3ea" showStatusBar="false">
+	<fx:Script>
+		<![CDATA[
+			/****************************************************************************
+			 * ADOBE SYSTEMS INCORPORATED
+			 * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+			 * All Rights Reserved.
+			 *  
+			 * NOTICE: Adobe permits you to use, modify, and distribute this file
+			 * in accordance with the terms of the license agreement accompanying it.
+			 * ****************************************************************************/
+
+			import osUtils.FileActionEvent;
+			import osUtils.FileActions;
+			
+			import ParamHandlers.ObjectParser;
+			import ParamHandlers.ParamCollection;
+			
+			import flash.net.registerClassAlias;
+			
+			import mx.rpc.AbstractOperation;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			private var responseData:*;
+			private var fActions:FileActions;
+			
+			/**
+			 * @private
+			 * This function parses the response from the AMF call and displays it in the text field.
+			 * 
+			 * @param e The ResultEvent from the AMF call.
+			 */
+			private function parseResponse(e:ResultEvent):void {
+				if (typeof(e.result) == "boolean") {
+					if (e.result) {
+						this.amfOutput.text = "The call returned true!";
+					} else {
+						this.amfOutput.text = "The call returned false."
+					}
+				} else if (typeof(e.result) == "number") {
+					this.amfOutput.text = "The call returned the number: " + e.result;
+				} else if (typeof(e.result) == "string") {
+					this.amfOutput.text = "The call returned the string: " + e.result;
+				} else if (typeof(e.result) == "xml") {
+					this.amfOutput.text = e.result.toString();
+				} else {
+					var outputData:String = "";
+					this.responseData = e.result.source;
+					var OParser:ObjectParser = new ObjectParser()
+					outputData += OParser.arrayToString(this.responseData);
+			    	this.amfOutput.text = outputData;
+			 	}
+			    this.statusOutput.text = "Success!";	
+			}
+			
+			/**
+			 * @private
+			 * This function is called when the AMF call issues a FaultEvent.
+			 * 
+			 * @param e The FaultEvent from the AMF call
+			 */
+			private function showFault(e:FaultEvent):void {
+				this.amfOutput.text = e.messageId.toString() + ": " + e.message;
+				this.statusOutput.text = "Failed!";
+			}
+			
+			/**
+			 * @private
+			 * This function will send the AMF request to the remote server based on the entered information.
+			 */
+			private function sendRequest():void {
+				var ro:RemoteObject = new RemoteObject(this.roDestination.text);
+				ro.endpoint = this.roEndpoint.text;
+				
+				var params:Array = this.sendDG.getFuncParams();
+				
+				var returnedData:Object;
+				ro.addEventListener(ResultEvent.RESULT,parseResponse);
+				ro.addEventListener(FaultEvent.FAULT,showFault);
+				
+				if (this.roUsername && this.roUsername.text.length > 0) {
+					if (this.remoteCreds.selected) {
+						ro.setRemoteCredentials(this.roUsername.text,this.roPassword.text);
+					} else {
+						ro.setCredentials(this.roUsername.text, this.roPassword.text);
+					}
+				}
+				
+				var roOp:AbstractOperation =  ro.getOperation(this.roFunction.text);
+				
+				if (params.length > 0) {
+					roOp.send(params[0]);
+				} else {
+					roOp.send();
+				}
+
+			}
+			
+			/**
+			 * @private
+			 * Display error from File Action Event
+			 */
+			private function displayError(e:FileActionEvent):void {
+				this.statusOutput.text = e.message;
+			}
+			
+			/**
+			 * @private
+			 * Prompt where to save the data
+			 */
+			private function saveAMFResponse():void {
+				if (this.fActions == null) {
+					this.fActions = new FileActions(3);
+					this.fActions.currentFile = File.documentsDirectory.resolvePath("/");
+					fActions.addEventListener(FileActionEvent.GENERAL_ERROR, displayError);
+					fActions.addEventListener(FileActionEvent.IO_ERROR, displayError);
+					fActions.addEventListener(FileActionEvent.CREATE_COMPLETE, saveFile);
+				}
+				
+				this.fActions.openFile(null,FileActions.CREATE,"foo.amf");
+			}
+			
+			/**
+			 * @private
+			 * Write data to the file
+			 */
+			private function saveFile(e:Event):void {
+				this.fActions.writeAMF(this.responseData);
+				this.fActions.closeFile();
+			}
+			
+			/**
+			 * @private 
+			 * On Window Close, ensure ObjectCollection PopUp is shut down.
+			 */
+			private function closePopUp():void {
+				this.sendDG.closePopUp();
+			}
+		]]>
+	</fx:Script>
+	<s:Label x="10" y="16" width="101" text="RO Endpoint:"/>
+	<s:TextInput x="119" y="10" width="269" id="roEndpoint" maxChars="4096"
+				 toolTip="Example: http://www.example.com:8400/blazeds/messagebroker/amf"/>
+	<s:Label x="10" y="42" text="RO Destination:" width="101"/>
+	<s:TextInput x="119" y="36" width="269" id="roDestination"
+				 toolTip="Example: This would be the id in the destination tag of your remoting-config.xml or proxy-config.xml"/>
+	<s:Label x="10" y="69" text="RO Function:" width="101"/>
+	<s:TextInput x="119" y="63" width="269" id="roFunction"
+				 toolTip="This would be the name of an exposed funtion within the above destination"/>
+	<s:Label x="11" y="98" text="Auth Username:" width="101"/>
+	<s:TextInput x="120" y="92" width="267" id="roUsername"/>
+	<s:Label x="10" y="126" text="Auth Password:" width="101"/>
+	<s:TextInput x="121" y="120" width="267" id="roPassword"/>
+	<s:CheckBox x="124" y="150" label="Remote Credentials" width="147" id="remoteCreds"/>
+	<s:Label x="10" y="191" text="Function Parameters/New Value" width="223"/>
+	<ParamHandlers:ParamCollection x="10" y="209" width="372" id="sendDG" includeClass="true" includeObject="true" height="233"/>
+	<s:Button x="6" y="464" label="Submit Query" width="125" click="sendRequest()"/>
+	<s:Label x="423" y="21" text="Output" width="124"/>	
+	<s:TextArea x="421" y="39" width="320" height="470" id="amfOutput"/>
+	<s:Label x="9" y="512" text="status" width="377" id="statusOutput"/>
+	<s:Button x="609" y="519" label="Save AMF Response" click="saveAMFResponse()"/>
+	<mx:VRule x="408" y="13" height="554"/>
+</s:Window>

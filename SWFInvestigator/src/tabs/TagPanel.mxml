@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:NavigatorContent xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" width="768" height="586" show="initNavigator()">
+	<fx:Script>
+		<![CDATA[
+			/****************************************************************************
+			 * ADOBE SYSTEMS INCORPORATED
+			 * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+			 * All Rights Reserved.
+			 *  
+			 * NOTICE: Adobe permits you to use, modify, and distribute this file
+			 * in accordance with the terms of the license agreement accompanying it.
+			 * ****************************************************************************/
+			
+			import decompiler.ASDecompiler;
+			import decompiler.TagXML;
+			import decompiler.tamarin.abcdump.Tag;
+			
+			//import mx.events.ListEvent;
+			
+			[Bindable]
+			[Embed(source="/assets/tagviewer/TagImage.jpg")] 
+			public var TagIcon:Class;
+			
+			[Bindable]
+			[Embed(source="/assets/fuzzer/ErrorImage.jpg")] 
+			public var ErrorIcon:Class;
+			
+			/**
+			 * @private
+			 * Pointer to the current ASDecompiler object
+			 */
+			//private var currentASD:ASDecompiler;
+			
+			private var lastNavPos:int;
+			private var reset:Boolean = false;
+			
+			/**
+			 * Initialize Tag Viewer
+			 */
+			public function initTagViewer():void {
+				//this.currentASD = asd;
+				reset = true;
+				if (this.tagTree != null) {
+					initNavigator();
+				}
+			}
+			
+			/**
+			 * Clear references for GC
+			 */
+			/**
+			public function clearRefs():void {
+				this.currentASD = null;
+			}
+			 */
+			
+			/**
+			 * Called by Dump File button
+			 */
+			private function dumpFile():void {
+				treeSelect(true);
+			}
+			
+
+			/**
+			 * @private
+			 * Called by the AS3Navigator when someone selects an item in the tree, it decides what to put in the as3Code box based on the selection.
+			 * 
+			 * @param dumpFile Informs the decompiler whether it should extract the binary data/image from the tag.
+			 */
+			private function treeSelect(dumpFile:Boolean = false):void {
+				//var node:XML = Tree(evt.target).selectedItem as XML;
+				var node:XML = this.tagTree.selectedItem as XML;
+				if (node.name().localName.indexOf("tag") == 0) {
+					var pos:uint = parseInt(node.@position.toString());
+					var length:uint = parseInt(node.@length.toString());
+					var type:uint = parseInt(node.@type.toString());
+					var name:String = node.@name.toString();
+					
+					var info:String = new String();
+					info += "Name: " + name + "\r";
+					info += "Type: " + type + "\r";
+					info += "Position: " + pos + "\r";
+					info += "Length: " + length + "\r";
+					info += "RecordHeader: " + node.@header.toString() + "\r";
+					if (node.@SIErrorMessage != null && node.@SIErrorMessage.toString().length > 0) {
+						info += "Error Detected: " + node.@SIErrorMessage.toString() + "\r";
+					}
+					info += "\r";
+					
+					if (name == "DefineBitsLossless" || name == "DefineBitsLossless2" ||
+						name == "DefineBitsJPEG2" || name == "DefineBitsJPEG3" ||
+						name == "DefineBinaryData") {
+						this.fileDump.enabled = true;
+					} else {
+						this.fileDump.enabled = false;
+					}
+
+
+					if (node.@header.toString() == "long") {
+						length += 6;
+					} else {
+						length += 2;
+					}
+					
+					info += parentApplication.currentASD.printTagInfo(type,pos,dumpFile);
+					
+					info += "\r\rHex:\r";
+					info += parentApplication.currentASD.getTagHex(pos,length) + "\r";
+										
+					this.tagCode.text = info;
+				} else if (node.name().localName.indexOf("field") == 0) {
+					this.tagCode.text = node.@data.toString();
+				}
+			}
+			
+			/**
+			 * @private
+			 * Initializes the Navigator tab on view.
+			 */
+			private function initNavigator():void {
+				if (!reset)
+					return;
+				else
+					reset = false;
+				
+				if (parentApplication.currentASD != null) {
+					var tagXML:TagXML = parentApplication.currentASD.produceTagXML();
+					if (tagXML == null) {
+						this.tagTree.dataProvider = null;
+						this.tagCode.text = "Unable to parse SWF";
+						return;
+					}
+					this.tagTree.dataProvider = tagXML.tagData;
+					this.tagTree.labelFunction = tagXML.tagTreeLabel;
+					this.tagCode.text = "";
+				} else {
+					this.tagTree.dataProvider = null;
+					this.tagCode.text = "No SWF data";
+				}
+				this.fileDump.enabled = false;
+			}
+			
+			
+			/**
+			 * @private
+			 * Searches the selected class' disassembly for the selected string.
+			 */
+			/**
+			private function tagNavSearch():void {
+				if (this.tagCode == null || this.tagCode.text == "") {
+					return;
+				}
+				
+				if (this.tagNavSearchText.text.length == 0) {
+					mx.controls.Alert.show("Please enter a value into the search field","Error");
+				}
+				
+				var str:String = this.tagCode.text;
+				var index:int;
+				if (this.tagNavSearchButton.label == "Find") {
+					this.tagNavSearchButton.label = "Find Next";
+					index = str.indexOf(this.tagNavSearchText.text);
+				} else {
+					index = str.indexOf(this.tagNavSearchText.text,this.lastNavPos + 1);
+				}
+				
+				this.lastNavPos = index;
+				
+				if (index > -1) {
+					this.tagCode.focusManager.setFocus(this.tagCode);
+					this.tagCode.setSelection(index,index + this.tagNavSearchText.text.length);
+				}
+			}
+			 */
+			
+		]]>
+	</fx:Script>
+	<!--<mx:Canvas id="tagNavigator" label="Tag Navigator" tabIndex="6" show="initNavigator()" height="576" width="743">-->
+	<s:Group>
+		<s:HGroup x="21" y="28" width="95%" height="548">
+			<mx:Tree id="tagTree" height="532" width="207" change="this.treeSelect()" iconField="@icon" folderClosedIcon="@Embed(source='/assets/tagviewer/TagImage.jpg')" folderOpenIcon="@Embed(source='/assets/tagviewer/TagImage.jpg')" defaultLeafIcon="@Embed(source='/assets/tagviewer/FieldImage.jpg')"/>
+			<s:VGroup width="503" height="532" horizontalAlign="right">
+				<!--
+				<mx:HBox width="100%" height="31" horizontalAlign="right">
+					<mx:TextInput id="tagNavSearchText" width="214" click="this.tagNavSearchButton.label='Find'"/>
+					<mx:Button id="tagNavSearchButton" label="Find" click="tagNavSearch()"/>
+				</mx:HBox>
+				-->
+				<s:TextArea id="tagCode" width="493" height="503" color="#FFFFFF" contentBackgroundColor="#000000"/>
+				<s:Button label="Dump to File" id="fileDump" enabled="false" click="dumpFile()"/>
+			</s:VGroup>
+		</s:HGroup>
+		<s:Label x="21" y="17" text="Tags"/>
+		<s:Label x="248" y="17" text="Tag Information"/>
+	<!--</mx:Canvas>-->
+	</s:Group>
+</s:NavigatorContent>

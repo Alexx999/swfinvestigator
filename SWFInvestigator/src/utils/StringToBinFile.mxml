@@ -1,0 +1,376 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Window xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  width="770" height="662" backgroundColor="#FFFFFF" showStatusBar="false" title="Binary Editor">
+	<fx:Script>
+		<![CDATA[
+			/****************************************************************************
+			 * ADOBE SYSTEMS INCORPORATED
+			 * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+			 * All Rights Reserved.
+			 *  
+			 * NOTICE: Adobe permits you to use, modify, and distribute this file
+			 * in accordance with the terms of the license agreement accompanying it.
+			 * ****************************************************************************/
+			
+			import hexEditor.HexValidator;
+			import hexEditor.HexViewer;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			
+			import osUtils.FileActionEvent;
+			import osUtils.FileActions;
+			
+			import spark.components.gridClasses.CellPosition;
+			
+			include '../hexEditor/gridEventHandlers.as';
+			
+
+			/**
+			 * A local copy of the SWF Bytes
+			 */
+			public var swfBytes:ByteArray = new ByteArray();
+			
+			[Bindable]
+			private var hvFileTagCollection:ArrayCollection;
+			
+			[Bindable]
+			public var HV:HexViewer = new hexEditor.HexViewer(true);
+			
+			[Bindable]
+			public var hvSearchType:ArrayCollection = new ArrayCollection(
+				[ {label:"Hex", data:"findHex"}, 
+				  {label:"String", data:"findString"} ]);
+			
+			private var fActions:FileActions;
+			
+			
+			/**
+			 * @private
+			 * Converts a string of integers to hex
+			 * Expected format is "12345678, 87654321"
+			 */
+			private function convertToHex():void {
+				var rexp:RegExp = /^[0-9\, ]+$/g;
+				if (!rexp.test(this.sourceText.text)) {
+					this.errorBox.text = "String contains invalid characters";
+					return;
+				} else if (this.sourceText.text.length == 0) {
+					this.errorBox.text = "Please enter data into Source Text";
+					return;
+				}
+				
+				swfBytes.clear();
+				
+				var s:String;
+				var l:int = 0;
+				var j:int = 0;
+				
+				if (this.sourceText.text.indexOf(",") > 0) {
+					var tmp:Array = this.sourceText.text.split(/[\, ]+/);
+					for (var i:int = 0; i < tmp.length; i++) {
+						s = uint(tmp[i]).toString(16);
+						if (s.length != 8) {
+							l = 0;
+							j = 8 - s.length;
+							while (l < j) { 
+								s = "0" + s;
+								l++;
+							}
+						}
+						for (j = 0; j < s.length; j += 2) {
+							swfBytes.writeByte(int("0x" + s.charAt(j) + s.charAt(j+1)));
+						} 
+					}
+				} else {
+					s = uint(this.sourceText.text).toString(16);
+					if (s.length != 8) {
+						j = 8 - s.length;
+						while (l < j) {
+							s = "0" + s;
+							l++;
+						}
+					}
+					for (j = 0; j < s.length; j += 2) {
+						swfBytes.writeByte(int("0x" + s.charAt(j) + s.charAt(j+1)));
+					} 
+				}
+				
+				this.HV.initViewer(this.swfBytes);
+				HV.updateHexArray();
+			}
+			
+			/**
+			 * @private
+			 * Compress all the data in the byte array and re-display
+			 */
+			private function compressData():void {
+				this.swfBytes.compress();
+				this.HV.initViewer(this.swfBytes);
+				HV.updateHexArray();
+			}
+			
+			/**
+			 * @private
+			 * Uncompress all the data in the byte array and re-display
+			 */
+			private function uncompressData():void {
+				try {
+					this.swfBytes.uncompress();
+					this.HV.initViewer(this.swfBytes);
+					HV.updateHexArray();
+				} catch (e:Error) {
+					this.errorBox.text = e.message;
+				}
+			}
+			
+			/**
+			 * @private
+			 * XOR all the data in the byte array and re-display
+			 */
+			private function xorData():void {
+				var x_val:int;
+				
+				if (this.xorValue.text.indexOf("x") > 0) {
+					x_val = int (this.xorValue.text);
+				} else {
+					x_val = parseInt(this.xorValue.text);
+				}
+				
+				for (var i:int = 0; i < this.swfBytes.length; i++) {
+					this.swfBytes[i] = this.swfBytes[i] ^ x_val;
+				}
+				this.HV.initViewer(this.swfBytes);
+				HV.updateHexArray();
+			}
+			
+			/**
+			 * @private
+			 * Copies the hex string to the data grid
+			 * Supported formats include "0x44445555", "44555544", "44,55" or "0x44,0x55"
+			 */
+			private function copyToGrid():void {
+				var sText:String = this.sourceText.text;
+				
+				var rexp:RegExp = /^[0-9A-Fa-f\, x]+$/g;
+				if (!rexp.test(sText)) {
+					this.errorBox.text = "String contains invalid characters";
+					return;
+				} else if (sText.length == 0) {
+					this.errorBox.text = "Please enter data into Source Text";
+					return;
+				}
+
+				swfBytes.clear();
+				var j:int = 0;
+				
+				if (sText.indexOf(",") > 0) {
+					var tmp:Array = sText.split(/[ \,]+/);
+					for (var i:int = 0; i < tmp.length; i++) {
+						if (tmp[i].length == 2) {
+							swfBytes.writeByte(int("0x" + tmp[i]));
+						} else if (tmp[i].length % 2 == 0) {
+							for (j = 0; j < tmp[i].length; j += 2) {
+								if (tmp[i].charAt(j+1) != "x") {
+									swfBytes.writeByte(int("0x" + tmp[i].charAt(j) + tmp[i].charAt(j+1)));
+								}
+							}
+						} else {
+							this.errorBox.text = "Hex length for " + tmp[i] + " is not an even length";
+						}
+					}
+				} else {
+					if (sText.length % 2 != 0) {
+						this.errorBox.text = "Hex String is not an even length!";
+						return;
+					} else {
+						for (j = 0; j < sText.length; j += 2) {
+							swfBytes.writeByte(int("0x" + sText.charAt(j) + sText.charAt(j+1)));
+						}
+					}
+				}
+				
+				this.HV.initViewer(this.swfBytes);
+				HV.updateHexArray();
+			}
+			
+
+			/**
+			 * @private
+			 * This handles the visual aspects of the search and utilizes the HexViewer to perform the search.
+			 */
+			private function findHexString():void {
+				if (hexSearchText.text == null) {
+					return;
+				}
+				
+				var findNext:Boolean = false;
+				if (this.searchHexButton.label.indexOf("Find Next") == 0) {
+					findNext = true;
+				}
+				
+				this.hvWrapText.setStyle("color", 0xFF0000);
+				
+				var pos:int = 0;
+				if (this.hvSearchCB.selectedIndex == 1) { //String
+					pos = this.HV.findString(this.hexSearchText.text,findNext);
+				} else {
+					var re:RegExp = /^[A-Fa-f0-9]+$/g;
+					if (re.test(this.hexSearchText.text) == false) {
+						this.hvWrapText.text = 'Invalid Hex Characters';
+						return;
+					}
+					pos = this.HV.findHexString(this.hexSearchText.text,findNext);
+				}
+				
+				var cp:CellPosition;
+				
+				if (pos != -1) {
+					this.hvDataGrid.selectedIndex = pos;
+					cp = new CellPosition(pos,this.HV.currentPosition.column);
+					this.hvDataGrid.selectedCell = cp;
+					this.hvDataGrid.ensureCellIsVisible(pos);
+					this.hvWrapText.text = "";
+					this.searchHexButton.label="Find Next";
+				} else if (pos == -1 && findNext == true) {
+					this.hvWrapText.text = 'Search Wrapped';
+					
+					if (this.hvSearchCB.selectedIndex == 1) { //String
+						pos = this.HV.findString(this.hexSearchText.text,false);
+					} else {
+						pos = this.HV.findHexString(this.hexSearchText.text,false);
+					}
+					
+					this.hvDataGrid.selectedIndex = pos;
+					cp = new CellPosition(pos,this.HV.currentPosition.column);
+					this.hvDataGrid.selectedCell = cp;
+					this.hvDataGrid.ensureCellIsVisible(pos);
+					this.searchHexButton.label="Find Next";
+				} else if (pos == -1) {
+					this.hvDataGrid.selectedIndex = -1;
+					this.searchHexButton.label = "Find";
+					this.hvWrapText.text = 'Not Found';
+				}
+			}
+			
+			
+			/**
+			 * @private
+			 * Switches the endian-ness in the hex table
+			 */
+			private function switchEndian():void {
+				var i:int = 0;
+				if (this.swfBytes.length % 4 != 0) {
+					this.swfBytes.position = this.swfBytes.length -1;
+					while (i < this.swfBytes.length % 4) {
+						this.swfBytes.writeByte(0);
+						i++
+					}
+					this.swfBytes.position = 0;
+				}
+				
+				for (i = 0; i < this.swfBytes.length; i += 4) {
+					var tmp:uint;
+					tmp = this.swfBytes[i];
+					this.swfBytes[i] = this.swfBytes[i + 3];
+					this.swfBytes[i + 3] = tmp;
+					tmp = this.swfBytes[i+2];
+					this.swfBytes[i+2] = this.swfBytes[i+1];
+					this.swfBytes[i+1] = tmp;
+				}
+				
+				this.HV.initViewer(this.swfBytes);
+				HV.updateHexArray();
+			}
+			
+			/**
+			 * @private
+			 * Load a file directly
+			 */
+			private function loadFile():void {
+				this.swfBytes.clear();
+				if (this.fActions == null) {
+					this.fActions = new FileActions();
+				}
+
+				this.fActions.currentFile = File.userDirectory.resolvePath("/");
+				this.fActions.addEventListener(FileActionEvent.OPEN_RO_COMPLETE, getBytes);
+				this.fActions.addEventListener(ErrorEvent.ERROR, fileError);
+				this.fActions.addEventListener(FileActionEvent.IO_ERROR, fileError);
+				this.fActions.openFile(new FileFilter("Any File", "*.*;"), FileActions.READ);
+			}
+			
+			/**
+			 * @private
+			 * Read in all the bytes selected by loadFile
+			 */
+			private function getBytes(e:Event):void {
+				this.fActions.readAllBytes(this.swfBytes);
+				this.HV.initViewer(this.swfBytes);
+				HV.updateHexArray();
+				this.fActions.closeFile();	
+			}
+			
+			/**
+			 * @private
+			 * Handle any file errors
+			 */
+			private function fileError(e:FileActionEvent):void {
+				mx.controls.Alert.show("Encountered error: " + e.message,"Error",4,this);
+			}
+
+			
+		]]>
+	</fx:Script>
+
+	<s:Label x="16" y="24" text="Source data" width="145"/>
+	<s:Label x="483" y="15" width="265" id="errorBox" height="31" color="#FE0909"/>
+	<s:TextArea x="17.95" y="45.2" width="730" height="75" id="sourceText"
+				toolTip="The 'Copy Hex to Grid' button supports data represented as '0x44445555', '44555544', '44,55' or '0x44,0x55'.
+				The 'Convert Integers to Hex' button supports data represented as '12345678, 87654321'."/>
+	<s:Button x="457.45" y="123.65" label="Copy Hex to Grid" click="copyToGrid()"/>
+	<s:Button x="599.2" y="123.6" label="Convert Integers to Hex" click="convertToHex()"/>
+	<mx:HRule x="20" y="162" width="723" height="4"/>
+	<s:Button x="12" y="188" label="Load a File" click="loadFile()"/>
+	<s:TextInput x="374" y="189" width="180" id="hexSearchText" enabled="true" click="this.searchHexButton.label='Find';this.hvWrapText.text='';"/>
+	<s:DropDownList x="563.9" y="189.75" id="hvSearchCB" dataProvider="{ this.hvSearchType }" width="96" selectedIndex="0"/>
+	<s:Button x="667" y="189.25" label="Find" id="searchHexButton" click="findHexString()"/>
+	<s:Label x="10" y="58" id="hvWrapText" text="" width="184" height="18"/>
+	<s:DataGrid selectionMode="multipleCells" id="hvDataGrid" x="10" y="220.9" width="728" height="384"
+				dataProvider="{ this.HV.initDG }" enabled="true" sortableColumns="false" editable="true"
+				initialize="initializeDG()" gridItemEditorSessionSave="updateString(event)">
+		<s:columns>
+			<s:ArrayList>			
+				<s:GridColumn headerText="Offset" dataField="offset" width="75" editable="false" sortable="false"/>
+				<s:GridColumn headerText="" dataField="space1" width="15" editable="false" sortable="false"/>
+				<s:GridColumn headerText="0" dataField="col0" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+				<s:GridColumn headerText="1" dataField="col1" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+				<s:GridColumn headerText="2" dataField="col2" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+				<s:GridColumn headerText="3" dataField="col3" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+				<s:GridColumn headerText="4" dataField="col4" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+				<s:GridColumn headerText="5" dataField="col5" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+				<s:GridColumn headerText="6" dataField="col6" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+				<s:GridColumn headerText="7" dataField="col7" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+				<s:GridColumn headerText="8" dataField="col8" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+				<s:GridColumn headerText="9" dataField="col9" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+				<s:GridColumn headerText="10" dataField="col10" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+				<s:GridColumn headerText="11" dataField="col11" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+				<s:GridColumn headerText="12" dataField="col12" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+				<s:GridColumn headerText="13" dataField="col13" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+				<s:GridColumn headerText="14" dataField="col14" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+				<s:GridColumn headerText="15" dataField="col15" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+				<s:GridColumn headerText="" dataField="space2" width="15" editable="false" sortable="false"/>
+				<s:GridColumn headerText="String" dataField="string" editable="false" sortable="false"/>
+			</s:ArrayList>
+		</s:columns>
+	</s:DataGrid>
+	<s:Button x="24" y="617" label="Switch Endian" width="108" click="switchEndian()"/>
+	<s:Button x="667.95" y="617" label="Save" id="hvSave" click="this.HV.saveToFile()" />
+	<s:Button x="140" y="617" label="Compress" width="99" click="compressData()"/>
+	<s:Button x="246" y="617" label="Uncompress" width="98" click="uncompressData()"/>
+	<s:TextInput x="448" y="617" id="xorValue" width="90"/>
+	<s:Button x="543" y="617" label="XOR" click="xorData()" width="46"/>
+	<s:Label x="380" y="622" text="XOR Value:"/>
+</s:Window>

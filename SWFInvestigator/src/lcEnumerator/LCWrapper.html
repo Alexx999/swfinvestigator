@@ -1,0 +1,52 @@
+<HTML>
+<!-- &copy; 2009 Adobe Systems Incorporated. All rights reserved.  -->
+ <HEAD>
+  <TITLE>LC Communicator</TITLE>
+  <SCRIPT TYPE="text/javascript">
+  <!--
+  	var URL = window.location.href;
+	var splitURL = URL.split("?");
+	var urlVars = splitURL[1];
+	var info = urlVars.split("=");
+  // -->
+  </SCRIPT>
+ </HEAD>
+ <BODY>
+  <DIV>
+     <TABLE WIDTH="100%" BORDER="1">
+      <COLGROUP>
+        <COL WIDTH="80%"/>
+        <COL WIDTH="20%"/>
+      </COLGROUP>
+      <TR BORDER="1">
+       <TD><INPUT TYPE="TEXT" NAME="domain" ID="domain" style="width:100%"/></TD>
+       <TD><INPUT TYPE="submit" VALUE="Re-Map" onclick="rewriteDiv()"></TD>
+      </TR>
+     </TABLE>
+  </DIV>
+  <DIV ID="LCmapper">
+  </DIV>
+  <SCRIPT TYPE="text/javascript">
+  <!--
+     
+     function writeLCEnumMap(domain) {
+ 		var div = document.getElementById("LCmapper");
+ 		var frameString = '<iframe id="LCEnum" height="100%" width="100%" scrolling="no" src="LCEnumerator.html" documentRoot="app-storage:/LCEnumerator/" sandboxRoot="' + domain + '"/>';
+		div.innerHTML = frameString;
+		//alert (frameString);
+ 	  }
+ 	  
+ 	  function rewriteDiv() {
+ 	    var domain = document.getElementById("domain").value;
+ 	    writeLCEnumMap(domain);
+ 	    return (false);
+      }
+
+	  
+	  document.getElementById("domain").value = info[1];
+	  writeLCEnumMap(info[1]);
+     
+  //-->
+  </SCRIPT>
+ </BODY>
+</HTML>

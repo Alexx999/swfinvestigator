@@ -1,0 +1,520 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Window xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:utils="utils.*"
+		  xmlns:ParamHandlers="ParamHandlers.*"
+		  width="623" height="684" close="shutDown()" showStatusBar="false" title="Object Edtior"
+		  windowComplete="initLC()">
+	    <fx:Script>
+        <![CDATA[
+			/****************************************************************************
+			 * ADOBE SYSTEMS INCORPORATED
+			 * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+			 * All Rights Reserved.
+			 *  
+			 * NOTICE: Adobe permits you to use, modify, and distribute this file
+			 * in accordance with the terms of the license agreement accompanying it.
+			 * ****************************************************************************/
+			
+			import ParamHandlers.ObjectParser;
+			import ParamHandlers.ParamCollection;
+			
+			import flash.utils.getDefinitionByName;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.UIComponent;
+			import mx.events.CollectionEvent;
+			import mx.utils.ObjectUtil;
+			
+			import osUtils.FileActionEvent;
+			import osUtils.FileActions;
+			
+			import popUps.GetSWFUrl;
+			import popUps.PopUpReturnEvent;
+			
+			import utils.ObjectEditor.ObjectRelay;
+			import utils.ObjectEditor.ObjectRelayEvent;
+
+            [Bindable]
+            private var actionTypes:ArrayCollection = new ArrayCollection(
+                [ {label:"Assign Variable", data:"assign"},
+                  {label:"Retrieve Variable", data:"retrieve"}, 
+                  {label:"Call Function", data:"call"}]);
+                  
+            private var cObject:*;
+            
+			private var fActions:FileActions;
+			
+            private var popUrl:GetSWFUrl;
+            private var swfUrl:String;
+            private var ldr:Loader;
+			private var oRelay:ObjectRelay;
+			
+			/**
+			 * @private
+			 * Called at Window open to set up a listening LocalConnection for sent objects
+			 */ 
+			private function initLC():void {
+				this.oRelay = new ObjectRelay();
+				oRelay.addEventListener(ObjectRelayEvent.SEND_REQUEST, sendObject);
+				oRelay.addEventListener(ObjectRelayEvent.OBJECT_RECEIVED, lcUpdate);
+				oRelay.addEventListener(StatusEvent.STATUS, lcStatusUpdate);
+				oRelay.addEventListener(ObjectRelayEvent.INIT_ERROR,lcError);
+				oRelay.initConnection();
+			}
+			
+			/**
+			 * @private
+			 * Shut down the LocalConnection.connect interface if opened
+			 */
+			private function shutDown():void {
+				if (this.oRelay.connected) {
+					this.oRelay.close();
+				}
+			}
+			
+			/**
+			 * @private
+			 * If initLC fails, display an error.
+			 * 
+			 * @param e The ObjectRelayEvent.INIT_ERROR event
+			 */
+			private function lcError(e:ObjectRelayEvent):void {
+				this.debugOutput.text = "Could not init LocalConnection! Probably already in use!";
+			}
+			
+			/**
+			 * @private
+			 * Send the current Object to the LC caller
+			 * 
+			 * @param e The ObjectRelayEvent.SEND_REQUEST
+			 */
+			private function sendObject(e:ObjectRelayEvent):void {
+				oRelay.returnObject(this.cObject);
+			}
+			
+			/**
+			 * @private
+			 * Show in debugOutput whether the info was successfully sent.
+			 * 
+			 * @param event The StatusEvent.STATUS event.
+			 */
+			private function lcStatusUpdate(event:StatusEvent):void {
+				switch (event.level) {
+					case "status":
+						this.debugOutput.text = "LocalConnection.send() succeeded";
+						break;
+					case "error":
+						this.debugOutput.text = "LocalConnection.send() failed";
+						break;
+				}
+
+			}
+			
+			/**
+			 * @private
+			 * An object was sent to ObjectEditor for editing via the LocalRelay
+			 * 
+			 * @param e The ObjectRelayEvent.OBJECT_RECEIVED event
+			 */ 
+			private function lcUpdate(e:ObjectRelayEvent):void {
+				this.cObject = e.sentObject;
+				initTextBox();
+				this.debugOutput.text = "Object received via LocalConnection";
+			}
+
+			private function getClassReference():void {
+				var cName:String = this.classNameField.text;
+				var classReference:Class;
+				
+				try {
+					if (this.rLocal.selected || this.rRemote.selected) {
+						classReference = this.ldr.contentLoaderInfo.applicationDomain.getDefinition(cName) as Class;
+					} else {
+						classReference = getDefinitionByName(cName) as Class;
+					}
+				} catch (err:ReferenceError) {
+					this.output.text = "Could not find Class";
+					return;					
+				}
+				
+				try {
+					this.cObject = new classReference();
+				} catch (err:Error) {
+					this.output.text = "Could not instantiate Class";
+					this.debugOutput.text = err.message.toString();
+					return;
+				}
+				
+				initTextBox();
+			}
+
+			/**
+			 * @private
+			 * This function writes the definition of the class to the text box
+			 * Called by getClassReference
+			 * 
+			 * @param classReference The class to be written to the screen
+			 */
+			private function initTextBox():void {
+				
+				//var theStringClass:Function = mx.utils.ClassFinder.findClass(className);
+				//trace(theStringClass);
+				
+            	var outputData:String = new String();
+
+				/*            	
+				var test:TextArea = new TextArea();
+            	
+				// Get the Button control's E4X XML object description.
+            	var classInfo:XML = describeType(test);
+
+            	// Dump the entire E4X XML object into ta2.
+            	outputData = "ClassInfo:" + classInfo.toString() + "\n\n";
+
+            	// List the class name.
+            	outputData += "Class " + classInfo.@name.toString() + "\n";
+
+            	// List the object's variables, their values, and their types.
+            	for each (var v:XML in classInfo..variable) {
+                	outputData += "Variable " + v.@name + "=" + test[v.@name] + 
+                    	" (" + v.@type + ")\n";
+            	}
+				output.text = outputData;
+*/
+				outputData = ObjectUtil.toString(this.cObject);
+				if (outputData.length > 0) {
+					output.text = outputData;
+				} else {
+					output.text = "Could not fetch Object definition";
+				}
+				
+			}
+			
+			/**
+		     * @private 
+		     * Called when the Loader from grabSwf successfully obtains the SWF, this will initialize the ASD and various tabs.
+		     * 
+		     * @param e The complete Event from the Loader
+		     */
+		    private function loadComplete(e:Event):void {
+				var cName:String = this.classNameField.text;
+				this.output.text = "File Loaded.";
+				/**
+				try {
+					var c1ad:ApplicationDomain = (e.target as LoaderInfo).applicationDomain;
+					var classReference = c1ad.getDefinition(cName);
+					this.ldr.unload();
+					initTextBox(classReference);
+				} catch (err:ReferenceError) {
+					this.output.text = "Could not find Class";
+					this.ldr.unload();
+					return;
+				}
+				*/
+		    	//System.gc();
+		    }
+
+
+
+
+		    /**
+		    * @private
+		    * Could not load SWF
+		    * 
+		    * @param e The Error event from the Loader
+		    */
+		    private function displayIOError(e:Event):void {
+		    	this.output.text = "Could not load SWF!";
+		    }
+			
+		    /**
+		     * @private
+		     * Called when the user requests to load a new SWF, this figures out where to fetch the file and tries to load it.
+		     * 
+		     * @param evt The event from whatever loaded the bytes for the SWF.
+		     */
+		    private function grabSWF (evt:Event):void {
+		    	var type:String;
+		    	var name:String;
+		    	if (evt == null) {
+		    		var tmpArray:Array = this.swfUrl.split(/\|/,3);
+		    		name = tmpArray[0];
+		    		type = tmpArray[1];
+		    		this.swfUrl = tmpArray[2];
+		    	} else if (evt.type.indexOf("select") == 0) {
+		    		this.swfUrl = evt.currentTarget.url;
+		    		type = "file";
+		    		name = evt.currentTarget.name;
+		    	} else if (evt.type.indexOf("urlReturned") == 0) {
+		    		this.swfUrl = evt.target.historyUrl;
+		    		type = "url";
+		    		name = evt.currentTarget.historyUrl;
+		    	}
+
+
+		    	var urlRequest:URLRequest = new URLRequest(this.swfUrl);
+				
+		    	if (this.ldr == null) {
+					this.ldr = new Loader();
+				}
+				var ldrContext:LoaderContext = new LoaderContext();
+				ldrContext.applicationDomain = new ApplicationDomain();
+				this.ldr.contentLoaderInfo.addEventListener(Event.COMPLETE, loadComplete);
+				this.ldr.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, displayIOError);
+				try {
+					this.ldr.load(urlRequest,ldrContext);
+				} catch (e:Error) {
+					//Don't care
+				}
+
+		    }
+			
+			
+			/**
+			 * @private
+			 * Grab SWF from the web
+			 */
+			 private function grabRemoteSWF():void {
+				if (this.ldr != null) {
+					this.ldr.unload();
+				}
+		    	if (this.popUrl == null) {
+		    		this.popUrl = new GetSWFUrl();
+		    	}
+		    	this.popUrl.addEventListener(PopUpReturnEvent.URL_RETURNED,grabSWF);
+		    	this.popUrl.createPopUp(this);
+			 }
+			
+			/**
+			 * @private
+			 * Grab the local SWF
+			 */
+			private function grabLocalSWF():void {
+				if (this.ldr != null) {
+					this.ldr.unload();
+				}
+				
+		    	var fileR:File = new File();
+		    	var arr:Array = new Array();
+		    	arr[0] = new FileFilter("Flash Files (*.swf, *.swc)", "*.swf;*.swc;")
+		    	fileR.addEventListener(Event.SELECT,grabSWF);
+		    	fileR.browseForOpen ("Select File", arr);
+			}
+			
+			/**
+			 * @private
+			 * Reset to checking the builtin namespace
+			 */
+			private function resetToSystem():void {
+				if (this.ldr != null) {
+					this.output.text = "SWF Unloaded. Will do local lookups.";
+					this.ldr.unload();
+				}
+			}
+			
+			
+			/**
+			 * @private
+			 * Fetch or assign a variable from the loaded SWF.
+			 * 
+			 * @param callType A string that flags whether this is a retrieval or assignment operation.
+			 */
+			private function as3fetchVar(callType:String):void {
+				if (this.varNameField.text == "") {
+					this.output.text = "Please enter a value to fetch!";
+					return;
+				}
+				
+				var chunks:Array;
+				if (callType == 'custom') {
+					chunks = this.varNameField.text.split(".");
+				}
+				
+				var action:String = this.actionType.selectedItem.data.toString();
+				
+				var params:Array;
+				if (action == "call" || action == "assign") {
+					params = this.sendDG.getFuncParams();
+				}
+				
+				//var varArray:DisplayObject = this.as3Display.content;
+				var tempArray:Array = new Array();
+				var dumbFlag:int = -1;
+				
+				try {
+					for each (var i:* in chunks) {
+						if (dumbFlag == -1) {
+							if (action == "call" && chunks.length == 1) {
+								var args:Array = new Array(1);
+								tempArray.push(this.cObject[i].apply(this.cObject,params));
+							} else if (action == "assign" && chunks.length == 1) {
+								this.cObject[i] = params[0];
+								this.debugOutput.text = "Value " + i + " Assigned";
+								output.text = ObjectUtil.toString(this.cObject);
+								return;
+							} else {
+								tempArray.push(this.cObject[i]);
+							}
+						} else if ((chunks.length == dumbFlag + 2) && action == "call") {
+							tempArray.push(tempArray[dumbFlag][i].apply(tempArray[dumbFlag],params));
+						} else if ((chunks.length == dumbFlag + 2) && action == "assign") {
+							tempArray[dumbFlag][i] = params[0];
+							this.debugOutput.text = "Value Assigned";
+							output.text = ObjectUtil.toString(this.cObject);
+							return;
+						} else {
+							tempArray.push(tempArray[dumbFlag][i]);
+						}
+						dumbFlag++;
+					}
+				} catch (e:Error) {
+					this.debugOutput.text = e.name + ": " + e.message;
+					return;
+				}
+
+				var varData:* = tempArray.pop();
+				var outputData:String = "";
+				
+				var oParser:ObjectParser = new ObjectParser();
+				outputData += oParser.valueToString(i,varData);
+			    	
+				this.debugOutput.text = outputData;
+
+				output.text = ObjectUtil.toString(this.cObject);
+			}
+			
+			/**
+			 * @private
+			 * onCloseEvent
+			 */
+			private function onReturn():void {
+				if (this.ldr != null) {
+					this.ldr.unload();
+				}
+			}
+			
+			/**
+			 * @private
+			 * Set Up File Actions
+			 */
+			private function setUpFileActions():void {
+				this.fActions = new FileActions(3);
+				this.fActions.currentFile = File.documentsDirectory.resolvePath("/");
+				this.fActions.addEventListener(FileActionEvent.IO_ERROR,displayError);
+				this.fActions.addEventListener(FileActionEvent.GENERAL_ERROR,displayError);
+				this.fActions.addEventListener(FileActionEvent.OPEN_RO_COMPLETE, getFileData);
+				this.fActions.addEventListener(FileActionEvent.CREATE_COMPLETE, saveFile);
+
+			}
+			
+			/**
+			 * @private
+			 * Save To File
+			 */
+			private function saveToFile():void {
+				if (this.fActions == null) {
+					setUpFileActions();
+				} 
+				this.fActions.openFile(null,FileActions.CREATE,"foo.amf");
+			}
+			
+			/**
+			 * @private
+			 * Displays errors from saving to File
+			 */
+			private function displayError(e:FileActionEvent):void {
+				this.debugOutput.text = e.message;
+			}
+			
+			/**
+			 * @private
+			 * Called once the file is saved to close file.
+			 */
+			private function saveFile(e:Event):void {
+				this.debugOutput.text = "";
+				if (this.classNameField.text.length > 0 && this.registerClass.selected) {
+					try {
+						var cls:Class = getDefinitionByName(this.classNameField.text) as Class;
+						registerClassAlias(this.classNameField.text,cls);
+					} catch (refErr:ReferenceError) {
+						this.debugOutput.text = "Couldn't register Alias for class!";
+					}
+				}
+				this.fActions.writeAMF(this.cObject);
+				this.fActions.closeFile();
+			}
+			
+			/**
+			 * @private
+			 * Read from AMF File
+			 */
+			private function readFile():void {
+				if (this.fActions == null) {
+					setUpFileActions();
+				} 
+				this.fActions.openFile(new FileFilter("Settings Files (*.amf)", "*.amf;"), FileActions.READ);
+			}
+			
+			/**
+			 * @private
+			 * Retrieve data from the selected file
+			 */
+			private function getFileData(e:Event):void {
+				this.debugOutput.text = "";
+				this.cObject = this.fActions.readAMF();
+				
+				var cName:String = getQualifiedClassName(this.cObject);
+				if (cName.indexOf("Object") != 0) {
+					this.classNameField.text = cName;
+				} else {
+					this.classNameField.text = "";
+				}
+				
+				this.fActions.closeFile();
+				this.initTextBox();
+			}
+			
+
+        ]]>
+    </fx:Script>    
+
+
+    <s:Panel x="11" y="6" width="592" height="663" title="Create Object">    
+
+		<s:Label x="12" y="18" text="Object properties and values" width="265"/>            
+        <s:TextArea x="10" y="36" width="280" height="466" id="output" enabled="true"/>
+		<s:CheckBox x="12" y="510" label="Register Class Name" width="160" id="registerClass"/>
+		<s:Button x="203" y="509" label="Save To File" click="saveToFile()"/>
+		
+		<s:Label x="310" y="16" text="Read a previously saved object:"/>
+		<s:Button x="498" y="10" label="Read File" click="readFile()"/>
+		
+		<mx:HRule x="314" y="46" width="106" height="11"/>
+		<s:Label x="437" y="46" text="or"/>
+		<mx:HRule x="467" y="46" width="106" height="11"/>
+
+        <s:Label x="312" y="73" text="Import a global class definition or from a SWF:" width="263"/>
+		<s:Label x="314" y="104" text="Name:"/>
+        <s:TextInput x="360" y="99" width="217" id="classNameField" editable="true" enabled="true" displayAsPassword="false" text="mx.controls.TextArea"/>
+		<s:Label x="313" y="133" text="Location:"/>
+		<s:RadioButton x="377" y="129" label="System" groupName="defLocation" selected="true" enabled="true" id="rSystem" click="this.resetToSystem()"/>
+		<s:RadioButton x="451" y="129" label="Remote" groupName="defLocation" enabled="true" id="rRemote" click="this.grabRemoteSWF()"/>
+		<s:RadioButton x="528" y="129" label="Local" groupName="defLocation" enabled="true" id="rLocal" click="this.grabLocalSWF()"/>
+        <s:Button x="452" y="165" label="Get class defintion" click="getClassReference()"/>
+		
+		<mx:HRule x="310" y="202" width="267" height="6"/>
+        <s:Label x="313" y="220" text="Variables to assign or send:" width="200"/>
+        <s:TextInput x="313" y="239" width="256" id="varNameField"/>
+        <ParamHandlers:ParamCollection x="313" y="268" width="256" id="sendDG" height="222" includeObject="true"/>
+		<s:Label x="316" y="505" text="Choose action:"/>
+		<mx:ComboBox dataProvider="{this.actionTypes}" id="actionType" x="315" y="520"/>
+		<s:Button x="495" y="519" label="Execute" click="as3fetchVar('custom')"/>
+		
+		<s:Label x="10" y="551" text="Debug output" width="117"/>
+		<s:TextArea id="debugOutput" x="11" y="563" width="557" height="60"/>
+
+
+    </s:Panel>
+</s:Window>

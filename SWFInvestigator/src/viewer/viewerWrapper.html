@@ -1,0 +1,54 @@
+<html lang="en">
+<!-- 
+/****************************************************************************
+ * ADOBE SYSTEMS INCORPORATED
+ * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+ * All Rights Reserved.
+ *  
+ * NOTICE: Adobe permits you to use, modify, and distribute this file
+ * in accordance with the terms of the license agreement accompanying it.
+ * ****************************************************************************/
+  -->
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+<title>Viewer Wrapper</title>
+<script type="text/javascript">
+
+	if(typeof childSandboxBridge=='undefined')
+			childSandboxBridge={};
+	
+</script>
+<style>
+body { margin: 0px; overflow:hidden }
+</style>
+</head>
+
+<body scroll="no">
+<div id="viewer"></div>
+<script language="JavaScript" type="text/javascript">
+		
+	function viewer_DoFScommand(command, args) {
+		alert ("FSCommand Call -- Command: " + command + " -- Args: " + args);
+	}
+		
+	function rewriteDiv(bI) {
+		var htmlString = "<object id='viewer' classid='clsid:D27CDB6E-AE6D-11cf-96B8-444553540000' codebase='http://download.adobe.com/pub/shockwave/cabs/flash/swflash.cab#version=9,0,0,0' height='80%' width='80%'>";
+		htmlString += "<param name='src' value='" + bI.src + "'/>";
+		htmlString += "<param name='allowScriptAccess' value='" + bI.allowScriptAccess + "'/>";
+		htmlString += "<param name='allowNetworking' value='" + bI.allowNetworking + "'/>";
+		htmlString += "<param name='wmode' value='opaque'/>";
+		htmlString += "<param name='FlashVars' value='" + bI.flashVars + "'/>";
+		htmlString += "<embed name='viewer' wmode='opaque' pluginspage='/go/getflashplayer' src='" + bI.src + "' height='80%' width='80%' allowScriptAccess='" + bI.allowScriptAccess + "' allowNetworking='" + bI.allowNetworking + "' FlashVars='" + bI.flashVars + "'/>";
+		htmlString += "</object>";
+		
+		var div = document.getElementById("viewer");
+		viewer.innerHTML = htmlString;
+	}
+	
+	window.childSandboxBridge.rewriteDiv = rewriteDiv;
+
+</script>
+</body>
+</html>

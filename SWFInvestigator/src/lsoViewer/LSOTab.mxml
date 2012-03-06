@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:NavigatorContent xmlns:fx="http://ns.adobe.com/mxml/2009"
+		   xmlns:s="library://ns.adobe.com/flex/spark"
+		   xmlns:mx="library://ns.adobe.com/flex/mx" width="739" height="631">
+	<fx:Script>
+		<![CDATA[
+			/****************************************************************************
+			 * ADOBE SYSTEMS INCORPORATED
+			 * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+			 * All Rights Reserved.
+			 *  
+			 * NOTICE: Adobe permits you to use, modify, and distribute this file
+			 * in accordance with the terms of the license agreement accompanying it.
+			 * ****************************************************************************/
+
+			import lsoViewer.LSOInfo;
+			
+			import mx.events.FileEvent;
+
+			private var LSODirPath:String;
+			private var currentLSO:LSOInfo = new LSOInfo();
+			private var domain:String;
+			
+			
+			/**
+			 * This function is called when SWF Investigator closes to remove any left over temp files
+			 */
+			public function onClose(): void {
+		    	if (currentLSO.swfName.indexOf("None") != 0) {
+		    		var sourceFile:File = File.applicationStorageDirectory;
+		    		sourceFile = sourceFile.resolvePath("lsoViewer/" + currentLSO.swfName);
+		    		if (sourceFile.exists) {
+		    			sourceFile.deleteFile();
+		    		}
+		    	}
+		    }
+
+			/**
+			 * @private
+			 * Set the directory where the LSO's live for the File Chooser
+			 */		    
+		    private function setDirectory():void {
+				var LSOPath:String;
+				
+				this.warningText.text = "";
+				
+				if (Capabilities.os.indexOf("Windows Vista") == 0) {
+					LSOPath = "./AppData/Roaming/Macromedia/Flash Player/#SharedObjects/";
+		    	} else if (Capabilities.os.indexOf("Windows") == 0) {
+					LSOPath =  "./Applic~1/Macromedia/Flash Player/#SharedObjects/";
+				} else if (Capabilities.os.indexOf("Mac OS 10") == 0) {
+					LSOPath = "./Library/Preferences/Macromedia/Flash Player/#SharedObjects/"					 
+		    	} else {
+					LSOPath = "./.macromedia/Flash_Player/#SharedObjects/";
+				}
+				
+				var LSODir:File = File.userDirectory.resolvePath(LSOPath);
+				
+				//This handles the random directory
+				var fileArray:Array = LSODir.getDirectoryListing();
+				LSODirPath = fileArray[0].nativePath;
+
+				FST.directory = new File(LSODirPath);
+				FST.directory.addEventListener(FileListEvent.DIRECTORY_LISTING, checkDirLength);
+				FST.directory.getDirectoryListingAsync();
+				
+				FST.addEventListener(FileEvent.FILE_CHOOSE,selectedFile);
+		    }
+			
+			/**
+			 * @private
+			 * This function just sets the warningText if no directories are available
+			 * 
+			 * @param e The FileListEvent from the FST.directory
+			 */
+			private function checkDirLength(e:FileListEvent):void {
+				if (e.files != null && e.files.length == 0) {
+					this.warningText.setStyle("color",0xFF0000);
+					this.warningText.text = "No LSOs found!";
+					this.FST.enabled = false;
+					this.hLoader.enabled = false;
+				}
+			}
+		    
+		    /**
+		     * @private
+		     * Set the directory to the domain of the SWF
+		     * 
+		     * @param domain The domain to change focus to in the File Chooser.
+		     */ 
+		    private function changeFocus(domain:String):void {
+		    	if (domain == null) {
+		    		return;
+		    	}
+		    	var focusPath:String = FST.directory.nativePath;
+		    	if (Capabilities.os.indexOf("Windows") == 0) {
+		    		focusPath += "\\" + domain;
+		    	} else {
+		    		focusPath += "/" + domain;
+		    	}
+		    	if (this.FST.findItem(focusPath) != null) {
+		    		this.FST.selectedPath = focusPath;
+		    		var fIndex:int = this.FST.findIndex(focusPath);
+					this.FST.scrollToIndex(fIndex);
+					this.FST.openSubdirectory(focusPath);
+		    	}
+		    }
+		    
+		    /**
+		     * @private
+		     * Once a file is selected, this will parse the path to determine the original web path.
+		     * 
+		     * @param e The FileEvent from the selection of the file.
+		     */
+		    private function selectedFile(e:FileEvent):void {
+		    	currentLSO.clear();
+		    	var chosenFile:String = e.currentTarget.selectedPath;
+		    	//var debugInfo:String = "Native path: " + chosenFile + "<br>";
+		    	
+		    	var dirData:Array;
+		    	var pathInfo:String = chosenFile.substring (LSODirPath.length);
+		    	//debugInfo += "PathInfo: " + pathInfo + "<br>";
+		    	
+		    	if (Capabilities.os.indexOf("Windows") == 0) {
+		    		currentLSO.dirInfo = pathInfo.substring(0,pathInfo.lastIndexOf("\\") + 1);
+		    		dirData = pathInfo.split("\\");
+		    	} else {
+		    		currentLSO.dirInfo = pathInfo.substring(0,pathInfo.lastIndexOf("/") + 1);
+		    		dirData = pathInfo.split("/");
+		    	}
+		    	//debugInfo += "dirInfo: " + currentLSO.dirInfo + "<br>";
+		    	
+		    	
+		    	currentLSO.LSOname = dirData[dirData.length - 1].toString();
+		    	if (currentLSO.LSOname.indexOf(".ssl") == currentLSO.LSOname.length - 4) {
+		    		currentLSO.secure = true;
+		    		//debugInfo += "Secure: " + currentLSO.secure + "<br>";
+		    	}
+
+		    	currentLSO.LSOname = currentLSO.LSOname.substring(0,currentLSO.LSOname.length-4);
+		    	//debugInfo += "LSOName: " + currentLSO.LSOname + "<br>";
+		    	
+		    	
+		    	var tempName:String = dirData[dirData.length - 2].toString();
+		    	if (tempName.length >= 4 && tempName.indexOf(".swf") == tempName.length - 4) {
+		    		currentLSO.swfName = tempName;
+		    	}
+		    	
+		    	//debugInfo += "swfName: " + currentLSO.swfName + "<br>";
+		    	
+		    	currentLSO.domain = dirData[1].toString();
+		    	//debugInfo += "domainName: " + currentLSO.domain + "<br>";
+		    	
+		    	if (currentLSO.domain.indexOf("localhost") == 0) {
+		    		currentLSO.local = true;
+		    	}
+		    	//debugInfo += "webPath: " + currentLSO.getWebPath() + "<br>";
+		    	//displayDebug.htmlText = debugInfo;
+		    	
+		    	setUpHTML();
+		    }
+		    
+		    /**
+		     * @private
+		     * Called after the sandbox mapper is loaded, this will set the JS variables
+		     */
+		    private function setBridge (e:Event):void {
+				if (e.currentTarget.window.swfData != null) {
+				   e.currentTarget.window.swfData.LSOName = currentLSO.LSOname;
+				   e.currentTarget.window.swfData.SWFLocation = currentLSO.getSWFLocation();
+				   e.currentTarget.window.swfData.sandboxRoot = currentLSO.getLSOURL();
+				   e.currentTarget.window.swfData.documentRoot = currentLSO.getDocumentRoot();
+				   e.currentTarget.window.swfData.removeFile = currentLSO.swfName;
+				   e.currentTarget.window.writeLSOMap();
+				}
+			}
+		    
+		    /**
+		     * @private
+		     * This loads the sandbox remapper into the HTML Loader
+		     */
+		    private function setUpHTML():void {			
+				hLoader.horizontalScrollPolicy="off";
+				hLoader.verticalScrollPolicy="off";
+				hLoader.htmlLoader.addEventListener(Event.COMPLETE,setBridge);
+				hLoader.htmlLoader.load(new URLRequest("app:/lsoViewer/sandboxRemapper.html"));
+		    }
+		    
+		    /**
+		     * This function is used to set the domain folder that LSO Explorer should open by default
+		     * 
+		     * @param sURL The URL of the SWF
+		     */ 
+		    public function setDomain(sURL:String):void {
+		    	var pattern:RegExp = new RegExp("^http[s]?\:\\/\\/([^\\/]+)\\/");
+				var result:Object = pattern.exec(sURL);
+			
+				if (result == null) {
+					if (sURL.indexOf("file:") == 0) {
+						this.domain = "#localWithNet";
+					} else {
+						mx.controls.Alert("Error Parsing URL");
+						return;
+					}
+				} else {
+					this.domain = result[1];
+				}
+		    }
+			
+		]]>
+	</fx:Script>
+	<s:Group>
+		<s:Label x="14" y="19" text="Select LSO file"/>
+		<s:Label id="warningText" x="201" y="19" width="109" text=""/>
+		<mx:FileSystemTree width="310" height="575" id="FST" enabled="true" showIcons="true" showExtensions="true" initialize="setDirectory()" x="10" creationComplete="changeFocus(this.domain)" y="36"/>
+		<s:Label x="375" y="19" text="Edit LSO"/>
+		<mx:HTML y="36" width="354" height="574" id="hLoader" x="369" borderStyle="solid"/>
+	</s:Group>
+</s:NavigatorContent>

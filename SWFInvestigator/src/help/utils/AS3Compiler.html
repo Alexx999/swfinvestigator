@@ -1,0 +1,113 @@
+<HTML>
+<!-- 
+ /****************************************************************************
+ * ADOBE SYSTEMS INCORPORATED
+ * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+ * All Rights Reserved.
+ *  
+ * NOTICE: Adobe permits you to use, modify, and distribute this file
+ * in accordance with the terms of the license agreement accompanying it.
+ * ****************************************************************************/
+-->
+  <HEAD>
+    <TITLE>AS3 Compiler</TITLE>
+    <LINK REL=StyleSheet HREF="../assets/fonts.css" TYPE="text/css">
+  </HEAD>
+  <BODY>
+   <H3>AS3 Compiler Tab</H3>
+   <P>The AS3 Compiler is intended to compile small sections of ActionScript 3 code. This utility leverages code from the Mozilla
+   Tamarin project. The compiled code can be written to a console on the left or to a full SWF in a new browser window. To method
+   for printing output to the screen is different for each method.</P>
+   <B>Writing to the console</B><BR/>
+   <P>When you compile code to use the console window, the compiled code is imported loaded into the current security context.
+   <I><U>This means that it will run with full application privileges!</U></I> Therefore, do not compile anything that you don't
+   completely trust. You can print to the console by calling Printer.print().</P>
+   <table width="100%">
+    <tr width="100%">
+     <td width="100%" border="0" padding="0" style="background:DDDDDD">
+      <pre>
+     //To compile in this window and print
+     //to your right use the following code.
+     namespace ns = "utils.AS3Compiler";
+     use namespace ns;
+	 <BR/>
+     Printer.print("Hello");
+       </pre>
+      </td>
+     </tr>
+   </table><BR/>
+   <B>Writing to a new SWF</B><BR/>
+   <P>You can also create a SWF that can launch in the browser. This SWF will be created inside a temp directory and launched
+   from the local filesystem. The code for a SWF that can run in the browser is slightly different since you have to prep the
+   stage. Below is the code necessary to print to the screen in a standalone SWF.</P>
+   <table width="100%">
+    <tr width="100%">
+     <td width="100%" border="0" padding="0" style="background:DDDDDD">
+      <pre>
+	//If you plan to run the SWF in the browser
+	//then use the following code
+	namespace fd = "flash.display";
+	use namespace fd;
+	namespace ft = "flash.text";
+	use namespace ft;
+	<BR/>
+	class test extends Sprite {
+	  function test() {
+		var t:TextField = new TextField();
+		t.text = "Hello";
+		addChild(t);
+	  }
+	}
+          </pre>
+      </td>
+     </tr>
+   </table><BR/>
+   <BR/>
+   <B>Compile Button</B><BR/>
+   <P>The <I>Compile</I> button will compile the code and place it in the hex editor but it will not try to
+   execute the code. This can be useful to make sure your new code compiles as you write.</P>
+   
+   <B>Run Button</B><BR/>
+   <P>Click the <I>Run</I> button when you are creating ActionScript code that will run in the console to
+   the right.</P>
+   
+   <B>Run in Browser</B><BR/>
+   <P>This will place a SWF wrapper around your ActionScript code and launch it using your default web browser.
+   The file is loaded from a temp directory in your local filesystem.</P>
+   
+   <B>Load AS Source File Button</B><BR/>
+   <P>If you have some classes already written for the AS3 Compiler you can load those files into the compiler
+   using the <I>Load AS Source File</I> button.</P>
+   
+   <B>Save Source File Button</B><BR/>
+   <P>The <I>Save Source File</I> button will save your ActionScript to a local file so that you can reuse it again.</P>
+   <BR/>
+   <HR/>
+   <H3>Disassembler Tab</H3>
+   <P>The disassembler tab will translate the ActionScript from the <I>AS3 Compiler</I> tab into AS3 bytecodes.
+   </P>
+   <B>Dump Verbose Button</B><BR/>
+   <P>The <I>Dump Verbose</I> button will show additional information regarding the compiled bytecode.</P>
+   <BR>
+   <HR/>
+   <H3>Hex Editor</H3>
+   <P>The hex editor shows the ActionScript in binary form as ActionScript bytecodes. It works the same as the Hex Editor
+   tab and the Binary Editor utility with Ctrl-C, Ctrl-V, Ctrl-A and Ctrl-X support. You are also able to drag a file into
+   the hex viewer but it will not automatically disassemble.</P>
+   
+   <B>Load ABC File Button</B><BR/>
+   <P>As the name implies, this will allow you to load a file from the hard drive into the hex editor.</P>
+   
+   <B>Wrap In SWF Button</B><BR/>
+   <P>The <I>Wrap In SWF</I> button will wrap the ActionScript in SWF tags so it can be launched as an independent
+   SWF.</P>
+   
+   <B>Update Disassembler Button</B><BR/>
+   <P>If you modify the hex in the hex editor, you can have the disassembler tab reflect your changes. It will not do this
+   automatically because you would get errors as you changed each byte. It will not update the source tab since it can not
+   do decompilation. It can only do disassembly.</P>
+   
+   <B>Save Button</B><BR/>
+   <P>The <I>Save</I> button will save the information from the hex editor to a local file of your choosing.</P> 
+  </BODY>
+</HTML>

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:NavigatorContent xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="756" height="594" show="initNavigator()">
+	<fx:Script>
+		<![CDATA[
+			/****************************************************************************
+			 * ADOBE SYSTEMS INCORPORATED
+			 * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+			 * All Rights Reserved.
+			 *  
+			 * NOTICE: Adobe permits you to use, modify, and distribute this file
+			 * in accordance with the terms of the license agreement accompanying it.
+			 * ****************************************************************************/
+			
+			/*********************
+			 * AS3 Navigator Tab *
+			 *********************/
+			import decompiler.ABCXML;
+
+			//For As3 Navigator Box
+			private var lastNavPos:int;
+			
+			/**
+			 * @private
+			 * Called by the AS3Navigator when someone selects an item in the tree, it decides what to put in the as3Code box based on the selection.
+			 * 
+			 * @param evt The tree selection event.
+			 */
+			private function treeSelect(evt:Event):void {
+				var node:XML = Tree(evt.target).selectedItem as XML;
+				if (node.@type.indexOf("pckg") == 0) {
+					this.as3Code.htmlText = "";
+				} else if (node.@type.indexOf("class") == 0) {
+					this.as3Code.htmlText = node.@data.toString();
+				}
+			}
+			
+			/**
+			 * @public
+			 * Initializes the Navigator tab on view.
+			 */
+			public function initNavigator():void {
+				if (parentApplication.currentASD != null && parentApplication.currentASD.swfData.avm2) {
+					var abcXML:ABCXML = parentApplication.currentASD.dumpABCClasses();
+					if (abcXML == null) {
+						this.as3Tree.dataProvider = null;
+						this.as3Code.htmlText = "<b>Unable to parse SWF</b>";
+						return;
+					}
+					this.as3Tree.dataProvider = abcXML.abcData;
+					this.as3Tree.labelFunction = abcXML.abcTreeLabel;
+					this.as3Code.htmlText = "";
+				} else {
+					this.as3Tree.dataProvider = null;
+					this.as3Code.htmlText = "<b>Not available for AS2</b>";
+				}
+				
+			}
+			
+			/**
+			 * @private
+			 * Searches the selected class' disassembly for the selected string.
+			 */
+			private function as3NavSearch():void {
+				if (this.as3Code == null || this.as3Code.text == "") {
+					return;
+				}
+				
+				if (this.as3NavSearchText.text.length == 0) {
+					mx.controls.Alert.show("Please enter a value into the search field","Error");
+				}
+				
+				var str:String = this.as3Code.text;
+				var index:int;
+				if (this.as3NavSearchButton.label == "Find") {
+					this.as3NavSearchButton.label = "Find Next";
+					index = str.indexOf(this.as3NavSearchText.text);
+				} else {
+					index = str.indexOf(this.as3NavSearchText.text,this.lastNavPos + 1);
+				}
+				
+				this.lastNavPos = index;
+				
+				if (index > -1) {
+					this.as3Code.focusManager.setFocus(this.as3Code);
+					this.as3Code.setSelection(index,index + this.as3NavSearchText.text.length);
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<s:Group>
+		<mx:HBox x="21" y="19" width="95%" height="562">
+			<mx:Tree id="as3Tree" height="95%" width="207" change="this.treeSelect(event)"
+					 folderClosedIcon="@Embed(source='/assets/navigator/PackageImage.jpg')"
+					 folderOpenIcon="@Embed(source='/assets/navigator/PackageImage.jpg')"
+					 defaultLeafIcon="@Embed(source='/assets/navigator/ClassImage.jpg')"/>
+			<mx:VBox width="503" height="560">
+				<mx:HBox width="100%" height="31" horizontalAlign="right">	
+					<s:TextInput id="as3NavSearchText" width="214" click="this.as3NavSearchButton.label='Find'"/>
+					<s:Button id="as3NavSearchButton" label="Find" click="as3NavSearch()"/>
+				</mx:HBox>
+				<mx:TextArea id="as3Code" width="493" height="495" color="#FFFFFF" contentBackgroundColor="#000000"/>
+			</mx:VBox>
+		</mx:HBox>
+	</s:Group>
+</s:NavigatorContent>

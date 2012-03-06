@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<actionScriptProperties analytics="false" mainApplicationPath="SWFInvestigator.mxml" projectUUID="3bd9456f-206b-43d4-88e3-8116b6093a90" version="10">
+  <compiler additionalCompilerArguments="-locale en_US" autoRSLOrdering="true" copyDependentFiles="true" fteInMXComponents="false" generateAccessible="false" htmlExpressInstall="true" htmlGenerate="false" htmlHistoryManagement="false" htmlPlayerVersionCheck="true" includeNetmonSwc="false" outputFolderPath="bin-debug" removeUnusedRSL="true" sourceFolderPath="src" strict="true" targetPlayerVersion="0.0.0" useApolloConfig="true" useDebugRSLSwfs="true" verifyDigests="true" warn="true">
+    <compilerSourcePath>
+      <compilerSourcePathEntry kind="1" linkType="1" path="${DOCUMENTS}/dumpLSO/src"/>
+    </compilerSourcePath>
+    <libraryPath defaultLinkType="1">
+      <libraryPathEntry kind="4" path=""/>
+      <libraryPathEntry kind="1" linkType="1" path="libs"/>
+      <libraryPathEntry kind="3" linkType="1" path="${DOCUMENTS}/ParamHandlers/bin/ParamHandlers.swc" useDefaultLinkType="false"/>
+      <libraryPathEntry kind="1" linkType="1" path="${DOCUMENTS}/NativeApplicationUpdater/bin"/>
+    </libraryPath>
+    <sourceAttachmentPath/>
+  </compiler>
+  <applications>
+    <application path="SWFInvestigator.mxml">
+      <airExcludes/>
+    </application>
+  </applications>
+  <modules>
+    <module application="src/SWFInvestigator.mxml" destPath="inspectors/AS3Inspector.swf" optimize="true" sourcePath="src/inspectors/AS3Inspector.mxml"/>
+    <module application="src/SWFInvestigator.mxml" destPath="inspectors/AS2Inspector.swf" optimize="true" sourcePath="src/inspectors/AS2Inspector.mxml"/>
+    <module application="src/SWFInvestigator.mxml" destPath="inspectors/AS3LocalInspector.swf" optimize="true" sourcePath="src/inspectors/AS3LocalInspector.mxml"/>
+  </modules>
+  <buildCSSFiles/>
+  <flashCatalyst validateFlashCatalystCompatibility="false"/>
+  <buildTargets>
+    <buildTarget buildTargetName="default">
+      <airSettings airCertificatePath="" airTimestamp="true" anePathSet="true" version="1">
+        <airExcludes/>
+        <anePaths/>
+      </airSettings>
+      <actionScriptSettings version="1"/>
+    </buildTarget>
+  </buildTargets>
+</actionScriptProperties>

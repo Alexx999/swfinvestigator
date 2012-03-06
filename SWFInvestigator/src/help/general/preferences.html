@@ -1,0 +1,62 @@
+<HTML>
+<!-- 
+ /****************************************************************************
+ * ADOBE SYSTEMS INCORPORATED
+ * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+ * All Rights Reserved.
+ *  
+ * NOTICE: Adobe permits you to use, modify, and distribute this file
+ * in accordance with the terms of the license agreement accompanying it.
+ * ****************************************************************************/
+-->
+  <HEAD>
+    <TITLE>Preferences</TITLE>
+    <LINK REL=StyleSheet HREF="../assets/fonts.css" TYPE="text/css">
+  </HEAD>
+  <BODY>
+    <H3>Preferences</H3>
+    <B>General Tab</B><BR/>
+    <I>Default file history length:</I><P>This is how many previous files the application will track in the File pull down
+    menu.</P>
+    <I>Sandbox Remap Port:</I><P>Many of the tricks performed by SWF Investigator leverage the fact that WebKit acknowledges port
+    numbers in separating content and Flash Player does not.  This is the default port that SWF Investigator will use
+    assuming that it is not being used by the site you are interacting with or a local service.  If it does conflict, then change
+    the default port.</P>
+    <I>Default View Template:</I><P>This is the file within app-storage:/Viewer/ that the SWF viewer will use to load the SWF.
+    If you want to use a different HTML template to load the SWF in the SWF Viewer, then you would specify it here and copy it
+    into the Viewer directory.  Be sure to copy the JS parsing for the FlashVars into the new template file.  Do <i>not</i> make
+    changes to the default template because they will be overwritten the next time the app starts.</P>
+    <I>HTTP User Agent:</I><P>This is the User Agent that will be sent to the web server when SWF Investigator makes web requests.</P>
+    <I>Check for updates at launch:</I><P>Uncheck this box if you don't want SWF Investigator to check for updates at start up.</P>
+    <B>Decompilers Tab</B><BR/>
+    <P>This tab allows you to save the location and default arguments for decompilers to use in the Dissassembler Tab.</P>
+    <I>Decompiler Name:</I><P>The list of the currently available decompilers. Clicking on a name will populate the text fields.</P>
+    <I>Name:</I><P>The name you want to give the decompiler entry.</P>
+    <I>Location:</I><P>The path to the executable that will be run. Mac users should be aware that this tool has a problem with
+    directory paths that contain spaces. For instance, if you try to use the default path of
+    "/Applications/Adobe Flash Builder 4.5/sdks/4.6.0/bin/swfdump" for the Flex swfdump utility then the AIR Native Process will
+    have trouble launching it. Place a copy of the SDK in a path without spaces. If you try to move just the swfdump file itself
+    to a new directory then it will fail to resolve the location of the associated jar files because they are linked using the
+    relative path of "../lib/". You need to move the entire SDK or at least both the bin and lib directories.
+    </P>
+    <I>Arguments:</I><P>The default arguments that you want to pass to the executable. For instance, use "-abc" for the Flex swfdump
+    utility. The file location of the SWF will be automatically appended to the end of the argument string so place any file arguments
+    last.</P>
+    <I>Add/Update:</I><P>Clicking this will save or update the information in the database.</P>
+    <I>Delete:</I><P>Delete the the entry from the database. You cannot delete the internal disassessmbler.</P>
+    <B>Domains Tab</B><BR/>
+    <I>Default LCEnumerator Domain:</I><P>The default domain that LC Enumerator will use when loading a SWF.</P>
+    <I>Default Web Server IP:</I><P>The default IP address the Mini Web Server will listen on.</P>
+    <I>Default Web Server Port:</I><P>The default port that the Mini Web Server will listen on.</P>
+    <I>Web Server Document Root:</I><P>The default document root for the web server.</P>
+    <I>Default Fuzzing Domain:</I><P>This is the default domain name that SWFs will be remapped to when they are being fuzzed by the XSS Fuzzer.</P>
+    <B>Configs Tab</B><BR/>
+    <I>Default XSS Strings Config:</I><P>This is the plain text file containing all the attack strings that the XSS Fuzzer will use.</P>
+    <I>Default XSS Descriptions XML:</I><P>This XML file corresponds with the XSS Strings config. It provides the description and solution for each
+    attack string.</P>
+    <I>Default Security Strings File:</I><P>This is a plain text file containing the security strings that the Strings tab should look for in the
+    Strings list ofthe SWF.</P>
+    <I>Default AMF Dictionary File:</I><P>This is a plain text file containing the list of names that the AMF Identifier will use when looking for
+    services.</P>
+  </BODY>
+ </HTML>

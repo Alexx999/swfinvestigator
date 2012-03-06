@@ -1,0 +1,327 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:NavigatorContent xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="756" height="594" show="initDecompileBox()">
+	<fx:Script>
+		<![CDATA[
+			/****************************************************************************
+			 * ADOBE SYSTEMS INCORPORATED
+			 * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+			 * All Rights Reserved.
+			 *  
+			 * NOTICE: Adobe permits you to use, modify, and distribute this file
+			 * in accordance with the terms of the license agreement accompanying it.
+			 * ****************************************************************************/
+			
+			/*********************
+			 * SWF Decompiler Tab *
+			 **********************/
+			import mx.collections.ArrayCollection;
+			
+			import osUtils.NativeProcessHandler;
+			import osUtils.ProcessCompleteEvent;
+
+			
+			[Bindable]
+			private var decompilerList:ArrayCollection = new ArrayCollection();
+			
+			//For Decompilation Box
+			private var lastDecPos:int;
+			private var lastPagePos:int = 0;
+			private var decArray:Array;
+			
+			/**
+			 * @public
+			 * Initializes the Decompiler Tab of SWF Investigator
+			 * 
+			 * @param swfUpdate A Boolean indication that a new SWF was just loaded
+			 */
+			public function initDecompileBox (swfUpdate:Boolean = false):void {
+				
+				if (this.decompileBox == null) {
+					return;
+				}
+				
+				if (!NativeProcess.isSupported) {
+					this.decompilerSelection.enabled = false;
+					this.decFlagsText.enabled = false;
+					this.decUpdateButton.enabled = false;
+				}
+				
+				//InitArrayCollection for decompiler List
+				this.decompilerList.source = parentApplication.pDB.getDecompilerNames();
+				
+				if (parentApplication.currentASD == null) {
+					this.decompileBox.text="No SWF currently loaded";
+					this.decFlagsText.enabled = false;
+					return;
+				}
+				
+				if (!swfUpdate && this.decompileBox.text != "") {
+					return;
+				} else if (swfUpdate) {
+					this.decFlagsText.text = "";
+					this.decompilerSelection.selectedIndex = 0;
+				}
+				
+				decompileBox.text = "One moment please....";
+				
+				if (parentApplication.currentASD.swfData.byteCode && parentApplication.currentASD.swfData.byteCode.length == 1) {
+					this.decompilePage.enabled = false;
+				} else if (parentApplication.currentASD.swfData.byteCode) {
+					this.decompilePage.enabled = true;
+					this.decompilePage.maximum = parentApplication.currentASD.swfData.byteCode.length - 1;
+				}
+				
+				if (parentApplication.currentASD.swfData.byteCode) {
+					if (parentApplication.currentASD.swfData.byteCode.length > 0) {
+						this.decompileBox.text = parentApplication.currentASD.swfData.byteCode[0];
+					} else {
+						this.decompileBox.text = "No ActionScript found.";
+					}
+				} else {
+					this.decompileBox.text = "Error during processing.... Sorry.";
+				}
+				this.decArray = parentApplication.currentASD.swfData.byteCode;
+								
+				//decompileBox.htmlText = this.currentASD.swfData.byteCode;
+			}
+			
+			
+			/**
+			 * @private
+			 * Called by the search button, this will search the disassembly for the selected string and
+			 * highlight if it is found.
+			 */
+			private function decSearch():void {
+				if (this.decompileBox == null || this.decompileBox.text == "" || this.decArray == null) {
+					return;
+				}
+				
+				if (this.decSearchText.text.length == 0) {
+					mx.controls.Alert.show("Please enter a value into the search field","Error");
+				}
+				
+				var index:int;
+				this.decStatus.text = "";
+				this.decStatus.setStyle("color",0xFF0000);
+				this.decStatus.setStyle("font-weight","bold");
+				if (this.decSearchButton.label == "Find") {
+					this.decSearchButton.label = "Find Next";
+					this.lastPagePos = this.decompilePage.value;
+					index = this.decompileBox.text.indexOf(this.decSearchText.text);
+				} else {
+					index = this.decompileBox.text.indexOf(this.decSearchText.text,this.lastDecPos + 1);
+				}
+				
+				if (index == -1 && this.decompilePage.maximum > 0) {
+					var currentPage:int = this.decompilePage.value + 1;
+					if (currentPage >= this.decArray.length) {currentPage = 0;}
+					
+					var firstPass:Boolean = true;
+					while (index == -1 && currentPage != this.lastPagePos) {
+						if (firstPass) {
+							firstPass = false;
+						} else {
+							if (currentPage + 1 >= this.decArray.length) {
+								currentPage = 0;
+								this.decStatus.text = "Search Wrapped!";
+							} else {
+								currentPage++;
+							}
+						}
+						index = this.decArray[currentPage].indexOf(this.decSearchText.text);
+					}
+					if (index > -1) {
+						this.decompileBox.text = this.decArray[currentPage];
+						this.decompilePage.value = currentPage;
+					} else {
+						this.decStatus.text = "Not Found!";
+					}
+					
+				}
+				
+				this.lastDecPos = index;
+				
+				if (index > -1) {
+					this.decompileBox.focusManager.setFocus(this.decompileBox);
+					this.decompileBox.selectRange(index,index + this.decSearchText.text.length);
+					this.decompileBox.scrollToRange(index,index + this.decSearchText.text.length);
+				}
+			}
+			
+			/**
+			 * @private
+			 * Called when the decompiler selection changes to update the arguments text box
+			 */
+			private function decUpdateArgs():void {
+				var name:String = this.decompilerSelection.selectedItem;
+				
+				if (name.indexOf("internal") == 0) {
+					this.decFlagsText.enabled = false;
+					this.decFlagsText.text = "";
+					return;
+				}
+				
+				this.decFlagsText.enabled = true;
+				var decInfo:Object = parentApplication.pDB.getDecompilerInfo(name);
+				
+				if (parentApplication.swfUrl != null) {
+					this.decFlagsText.text = decInfo.arguments + " " + parentApplication.swfUrl;
+				} else {
+					this.decFlagsText.text = decInfo.arguments;
+				}
+				
+			}
+			
+			/**
+			 * @private
+			 * Called by the update button on the decompiler tab to use a different decompiler
+			 */
+			private function updateDecompiler():void {
+				var name:String = this.decompilerSelection.selectedItem;
+				
+				if (name.indexOf("internal") == 0) {
+					if (parentApplication.currentASD != null) {
+						this.decompileBox.text = parentApplication.currentASD.swfData.byteCode[0];
+						var len:int = parentApplication.currentASD.swfData.byteCode.length
+						if (len == 1) {
+							this.decompilePage.enabled = false;
+						} else if (len > 1) {
+							this.decompilePage.enabled = true;
+							this.decompilePage.maximum = len - 1;
+						}
+						this.decompilePage.value = 0;
+					} else {
+						this.decompileBox.text="No SWF currently loaded";
+					}
+					return;
+				}
+				
+				var decInfo:Object = parentApplication.pDB.getDecompilerInfo(name);
+				
+				if (decInfo == null) {
+					mx.controls.Alert.show("Error: Unable to locate decompiler - " + name);
+					return;
+				}
+				
+				if (!NativeProcess.isSupported) {
+					mx.controls.Alert.show("Error: Native Process is not supported on this platform.");
+					return;
+				}
+				
+				this.decompileBox.text = "One moment please....";
+				this.decArray = null;
+				
+				var nProcessHandler:NativeProcessHandler = new NativeProcessHandler(decInfo.path,this.decFlagsText.text,75000);
+				nProcessHandler.addEventListener(ProcessCompleteEvent.PROCESS_EXIT, decCompilerExit);
+				nProcessHandler.addEventListener(ProcessCompleteEvent.IO_ERROR, decCompilerIOError);
+				nProcessHandler.addEventListener(ProcessCompleteEvent.GENERAL_ERROR, decCompilerError);
+				nProcessHandler.launchProcess();
+			}
+			
+			/**
+			 * @private
+			 * Event listener for Native Process Exit Event
+			 */
+			private function decCompilerExit (evt:ProcessCompleteEvent):void {
+				this.decArray = evt.dataArray;
+				if (evt.dataArray != null) {
+					this.decompileBox.text = this.decArray[0];
+					if (this.decArray.length > 1) {
+						this.decompilePage.enabled = true;
+						this.decompilePage.maximum = this.decArray.length - 1;
+					} else {
+						this.decompilePage.enabled = false;
+						this.decompilePage.maximum = 0;
+					}
+					this.decompilePage.value = 0;
+				} else {
+					this.decompileBox.text = "Error in decompiling";
+				}
+			}
+			
+			/**
+			 * @private
+			 * Event listener for Native Process IO Error Event
+			 */
+			private function decCompilerIOError (evt:ProcessCompleteEvent):void {
+				this.decArray = evt.dataArray;
+				this.decompileBox.text = this.decArray[0];
+			}
+			
+			/**
+			 * @private
+			 * Event listener for Native Process General Error Event
+			 */
+			private function decCompilerError (evt:ProcessCompleteEvent):void {
+				this.decArray = evt.dataArray;
+				this.decompileBox.text = this.decArray[0];
+			}
+			
+			
+			/**
+			 * @private
+			 * Called by the numeric stepper to show the next page of disassembly.
+			 * 
+			 * @param e The Event trigged by the change in value.
+			 */ 
+			private function decNextPage(e:Event):void {
+				this.decompileBox.text = parentApplication.currentASD.swfData.byteCode[e.currentTarget.value];
+			}
+			
+			/**
+			 * @private
+			 * Called to create a temp file and view the application in a native application
+			 */
+			private function saveAndLaunchDecFile():void {
+				var tempFile:File = File.createTempFile();
+				var tempFS:FileStream = new FileStream();
+				tempFS.open(tempFile, FileMode.WRITE);
+				
+				var myPattern:RegExp = /[\r]/g;
+				
+				for each (var tempString:String in this.decArray) {
+					
+					if (Capabilities.os.indexOf("Windows") == 0) {
+						tempString = tempString.replace(myPattern,"\r\n");
+					} else {
+						tempString = tempString.replace(myPattern,"\n");
+					}
+					
+					tempFS.writeUTFBytes(tempString);
+				}
+				
+				tempFS.close();
+				
+				var tempText:File = new File();
+				
+				tempText = tempText.resolvePath(tempFile.nativePath + ".txt");
+				
+				tempFile.moveTo(tempText,true);
+				
+				tempText.openWithDefaultApplication();
+			}
+			
+		]]>
+	</fx:Script>
+	<s:Group>
+		<s:Label x="24.2" y="4.9" text="Disassembler:"/>
+		<s:DropDownList id="decompilerSelection" x="110.9" y="-0.2" width="154" requireSelection="true"
+						change="decUpdateArgs()" dataProvider="{this.decompilerList}"/>
+		<s:Label x="293.25" y="5.25" text="Arguments:" width="68"/>
+		<s:TextInput x="368.95" y="0.050000012" width="280" id="decFlagsText" enabled="false"
+					 toolTip="These are the arguments supplied to the disassembler. This does not apply for the internal disassembler."/>
+		<s:Button x="656.8" y="0.25" id="decUpdateButton" label="Update" click="updateDecompiler()" height="22"/>
+		<mx:HRule x="24" y="27" width="703"/>
+		<s:Label x="23.55" y="44.3" text="Disassembly (AS2 or AS3)" width="167" enabled="true"/>
+		<s:Label x="263" y="37.1" width="151" id="decStatus" height="19"/>
+		<s:TextInput x="422" y="35.8" width="205" id="decSearchText" click="this.decSearchButton.label='Find';this.decStatus.text='';"
+					 toolTip="Enter the term you want to search for in the disassembly and click Find."/>
+		<s:Button x="657.25" y="36.45" id="decSearchButton" label="Find" click="decSearch()"/>
+		<s:TextArea x="18.5" y="64" width="710" height="493" id="decompileBox" editable="true" enabled="true" color="#FFFFFF" contentBackgroundColor="#000000"/>
+		<s:Button x="20.05" y="562.9" label="Open with text viewer" width="135" click="saveAndLaunchDecFile()"/>
+		<s:Label x="629.95" y="568.25" text="Page:" width="41"/>
+		<s:NumericStepper x="674.95" y="561.15" id="decompilePage" value="0" minimum="0" stepSize="1" change="decNextPage(event)"/>
+	</s:Group>
+</s:NavigatorContent>

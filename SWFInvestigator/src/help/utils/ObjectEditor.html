@@ -1,0 +1,47 @@
+<HTML>
+<!-- 
+ /****************************************************************************
+ * ADOBE SYSTEMS INCORPORATED
+ * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+ * All Rights Reserved.
+ *  
+ * NOTICE: Adobe permits you to use, modify, and distribute this file
+ * in accordance with the terms of the license agreement accompanying it.
+ * ****************************************************************************/
+-->
+  <HEAD>
+    <TITLE>Object Editor</TITLE>
+    <LINK REL=StyleSheet HREF="../assets/fonts.css" TYPE="text/css">
+  </HEAD>
+  <BODY>
+   <H3>Object Editor</H3>
+   <P>The Object Editor allows you edit ActionScript objects using definitions in memory, from dynamically loaded SWFs, saved
+   AMF files or by custom crafting them.</P>
+
+   <B>Class Info</B><BR/>
+   <P>This will contain a text representation of the object that is created from the class. The <i>Register Class Name</i> and
+   <i>Save To File</i> button will allow you to create a local AMF file for the object. By checking <i>Register Class Name</i>,
+   the ObjectEditor will try to register the class name in the <i>Fetch Class</i> section with the object before saving so that
+   it isn't lost when the object is converted to AMF.</P>
+
+   <B>Read File</B><BR/>
+   <P>Click this button if you have already have an AMF file with the object defined that you can load from the filesystem.
+   This is an alternative to the <i>Fetch Class</i> approach.</P>
+
+   <B>Fetch Class</B><BR/>
+   <P>If you want to create an object dynamically, then type in the Fully Qualified Name of the class (eg. mx.controls.TextArea).
+   Next you will tell the object editor where to find the class. Your options are:</P>
+   <ul>
+     <li><i>System</i> - A builtin object or one the Object Editor already knows about.</li>
+     <li><i>Remote</i> - Import load (via Loader.loadBytes) a SWF that has the class.</li>
+     <li><i>Local</i> - Import load a SWF from the file system that has the class.</li>
+   </ul>
+   <P>You may see an error when loading the SWF but you can probably ignore it.
+   Click <i>Get class definition</i> to fetch the class.
+   </P>
+   <B>Variable to Assign</B><BR/>
+   <P>This is the same variable interface that is used throughout SWF Investigator.</P>
+   <B>Debug Output</B><BR/>
+   <P>This is just left over from debugging the implementation. Debug information can be found in this display.</P>
+  </BODY>
+</HTML>

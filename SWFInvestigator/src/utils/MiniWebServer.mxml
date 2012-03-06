@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Window xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  width="605" height="290" title="Mini Web Server" backgroundColor="#60f3ea" showStatusBar="false" windowComplete="onOpen()" close="onClose()">
+	<fx:Script>
+		<![CDATA[
+			import databaseUtils.PreferencesDB;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			import osUtils.WebServer;
+			import osUtils.WebServerEvent;
+			
+			/**
+			 * @private
+			 * The web server for cross-site flashing tests
+			 */
+			private var webServer:WebServer;
+			
+			/**
+			 * @private
+			 * A ptr to the preferences DB
+			 */
+			public var prefDB:PreferencesDB;
+			
+			/**
+			 * @private
+			 */
+			private function onOpen():void {
+				this.ipAddress.text = this.prefDB.getPref("serverIP");
+				this.docRoot.text = this.prefDB.getPref("serverPath");
+				this.listenPort.text = this.prefDB.getIntPref("serverPort").toString();
+			}
+			
+			/**
+			 * @private
+			 * Stop the web server when the window closes
+			 */
+			private function onClose():void {
+				if (this.webServer != null && this.webServer.listening) {
+					this.webServer.close();
+				}
+
+			}
+			
+			/**
+			 * @private
+			 * Display information from any server errors.
+			 * 
+			 * @param evt The WebServerEvent for general errors
+			 */
+			private function serverError(evt:WebServerEvent):void {
+				this.statusOutput.text += evt.message + "\n";
+			}
+			
+			/**
+			 * @private
+			 * Sets the text box to the location of the document root
+			 * 
+			 * @param evt The FileActionEvent
+			 */
+			private function onDirSelection(evt:Event):void {
+				this.docRoot.text = evt.target.url;
+				try {
+					this.webServer = new WebServer(this.docRoot.text);
+					this.webServer.addEventListener(WebServerEvent.GENERAL_ERROR, serverError);
+				} catch (e:Error) {
+					mx.controls.Alert.show("Document path does not exist!","Error", 4, this);
+				}
+			}
+			
+			/**
+			 * @private
+			 * This function creates the popUp window to select the directory file
+			 */
+			private function getDirectory():void {
+				var filePtr:File = File.documentsDirectory;
+				filePtr.addEventListener(Event.SELECT,onDirSelection);
+				filePtr.browseForDirectory("Choose the document root");
+			}
+			
+			/**
+			 * @private
+			 * Called by the Start Listening button to start the server and ensure variables are correct
+			 */
+			private function startListening():void {
+				if (this.docRoot.text.length < 1) {
+					mx.controls.Alert.show("Please choose a document root for the server.","Error", 4, this);
+					return;
+				}
+				
+				if (this.ipAddress.text.length < 7) {
+					mx.controls.Alert.show("Please specify a valid IP address","Error", 4, this);
+					return;
+				}
+				
+				if (this.listenPort.text.length < 1) {
+					mx.controls.Alert.show("Please specify a port number","Error", 4, this);
+					return;
+				}
+				
+				var port:Number = parseInt(this.listenPort.text);
+				if (isNaN(port)) {
+					mx.controls.Alert.show("Please specify a valid port number","Error", 4, this);
+					return;
+				}
+				
+				try {
+					if (this.webServer == null) {
+						this.webServer = new WebServer(this.docRoot.text);
+						this.webServer.addEventListener(WebServerEvent.GENERAL_ERROR, serverError);
+					}
+					if (this.webServer.listening) {
+						this.webServer.close();
+					}
+					this.webServer.listen(this.ipAddress.text, port); 
+				} catch (e:Error) {
+					mx.controls.Alert.show(e.message,"Error", 4, this);
+					return;
+				}
+				
+				this.statusOutput.text = "Successfully listening on " + this.ipAddress.text  + ":" + port.toString() + "\n";
+			}
+			
+			/**
+			 * @private
+			 * Stop the web server from listening
+			 */
+			private function stopListening():void {
+				if (this.webServer != null) {
+					this.webServer.close();
+					this.statusOutput.text = "Stopped listening...\n";
+				}
+			}
+			
+			/**
+			 * @private
+			 * Save these settings as the new defaults
+			 */
+			private function saveDefaults():void {
+				this.prefDB.updatePref("serverIP", this.ipAddress.text, false);
+				this.prefDB.updatePref("serverPort", this.listenPort.text, false);
+				this.prefDB.updatePref("serverPath", this.docRoot.text);
+			}
+			
+		]]>
+	</fx:Script>
+	<s:Group>
+		<s:Label x="19" y="19" text="Choose the root directory for the web server:"/>
+		<s:TextInput x="19" y="39" width="419" id="docRoot"/>
+		<s:Button x="456" y="40" label="Choose Directory" click="getDirectory()" />
+		<s:Label x="19" y="88" text="IP Address:"/>
+		<s:TextInput id="ipAddress" x="90" y="82" text="127.0.0.1"/>
+		<s:Label x="273" y="88" text="Port:"/>
+		<s:TextInput x="310" y="82" text="9080" id="listenPort"/>
+		<s:Button x="12" y="131" label="Start Listening" click="startListening()" />
+		<s:Button x="128" y="131" label="Stop Listening" click="stopListening()"/>
+		<s:Button x="405" y="131" label="Remember these settings" click="saveDefaults()"/>
+		<s:Label x="15" y="181" text="Status"/>
+		<s:TextArea x="10" y="201" width="562" height="79" id="statusOutput" text="Not listening..." editable="false"/>
+	</s:Group>
+</s:Window>

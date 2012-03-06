@@ -1,0 +1,36 @@
+<HTML>
+<!-- 
+ /****************************************************************************
+ * ADOBE SYSTEMS INCORPORATED
+ * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+ * All Rights Reserved.
+ *  
+ * NOTICE: Adobe permits you to use, modify, and distribute this file
+ * in accordance with the terms of the license agreement accompanying it.
+ * ****************************************************************************/
+-->
+  <HEAD>
+    <TITLE>AMF Identifier</TITLE>
+    <LINK REL=StyleSheet HREF="../assets/fonts.css" TYPE="text/css">
+  </HEAD>
+  <BODY>
+    <H3>AMF Identifier</H3>
+    <P>The AMF Identifier allows you to perform brute force identification of destination and methods using a dictionary file.
+    </P>
+    <P>The basic premise of the tool is that you specify the AMF URI of the service you want to enumerate.  If you are enumerating methods, then you must also provide
+    the destination name.  Once all the options are selected, the AMF Identifier will start querying the service and inspecting error messages to determine if the
+    destination or method exists on the server.</P>
+    <B>RO Endpoint:</B><P>The URL of the AMF Gateway that has the function you are calling.</P>
+    <B>RO Destination:</B><P>The destination name that is to supplied to the RO Endpoint.</P>
+    <B>Brute Force:</B><P>Select whether you are trying to brute force destinations or methods.</P>
+    <B>Auth Information:</B><P>The username and password for the connection.  The <I>Remote Credentials</I> checkbox dictates whether the <I>RemoteObject.setCredentials</I>
+    or the <I>RemoteObject.setRemoteCredentials</I> function is used to set authentication information on the connection.</P>
+    <B>Dictionary File:</B><P>This will create a pop-up where you can select the dictionary file.  It will only show files ending in <I>.txt</I> or <I>.dict</I>. Doubel click on
+    the file you want to use in order to select. You can also manually enter the location of the file using the native path for the OS.  e.g. <I>C:\test.txt</I>  </P>
+    <B>Query Interval:</B><P>The AMF Identifer will make a request every 330 milliseconds by default.  Adjust this value to adjust the number of queries per second.</P>
+    <B>Start Queries:</B><P>The Start Queries button will begin attempting to enumerate services.</P>
+    <B>Reset:</B><P>This will stop any running queries and reset everything back to the beginning.  You will need to click <I>Start Queries</I> to restart the scan.</P>
+    <B>Output:</B><P>This will contain the response from the remote query.  Anytime a destination or service is found, it will be placed at the top of the Output box and
+    start with the word <I>FOUND</I> followed by additional information. All failure information is tagged onto the end of the output as responses come back.</P>
+  </BODY>
+</HTML>

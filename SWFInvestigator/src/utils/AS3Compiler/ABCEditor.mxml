@@ -1,0 +1,479 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Window xmlns:fx="http://ns.adobe.com/mxml/2009"
+		   xmlns:s="library://ns.adobe.com/flex/spark"
+		   xmlns:mx="library://ns.adobe.com/flex/mx"
+		   implements="decompiler.Logging.ILog"
+		   width="794" height="667" backgroundColor="#FFFFFF" showStatusBar="false" title="AS3 Compiler" initialize="setUp()">
+	<fx:Script>
+		<![CDATA[
+			/****************************************************************************
+			 * ADOBE SYSTEMS INCORPORATED
+			 * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+			 * All Rights Reserved.
+			 *  
+			 * NOTICE: Adobe permits you to use, modify, and distribute this file
+			 * in accordance with the terms of the license agreement accompanying it.
+			 * ****************************************************************************/
+			
+			import decompiler.Logging.StringWriter;
+			import decompiler.Swf;
+			import decompiler.tamarin.abcdump.Abc;
+			
+			import hexEditor.HexValidator;
+			import hexEditor.HexViewer;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.DropdownEvent;
+			
+			import osUtils.FileActionEvent;
+			import osUtils.FileActions;
+			
+			import spark.components.gridClasses.CellPosition;
+			
+			import utils.AS3Compiler.ABCLoader;
+			import utils.AS3Compiler.CompiledESC;
+			import utils.AS3Compiler.Printer;
+			
+			include '../../hexEditor/gridEventHandlers.as';
+			
+			
+			/**
+			 * A local copy of the SWF Bytes
+			 */
+			public var swfBytes:ByteArray = new ByteArray();
+			
+			[Bindable]
+			private var hvFileTagCollection:ArrayCollection;
+			
+			[Bindable]
+			public var HV:HexViewer = new hexEditor.HexViewer(true);
+			
+			
+			[Bindable]
+			public var hvSearchType:ArrayCollection = new ArrayCollection(
+				[ {label:"Hex", data:"findHex"}, 
+					{label:"String", data:"findString"} ]);
+			
+			private var esc:CompiledESC = new CompiledESC;
+			private var sWriter:StringWriter;
+			private var abc:Abc;
+			private var tempFA:FileActions;
+			private var updateDump:Boolean = true;
+			private var ldr:Loader;
+			private var fileRef:FileReference;
+			
+			
+			/**
+			 * @private
+			 * Registers the Printer logger for the AS source files
+			 */
+			private function setUp():void {
+				Printer.logger = this;
+			}
+			
+			/**
+			 * @private
+			 * Loads an AS source file from the file system.
+			 * 
+			 * @param e The FileActionEvent from loadSource
+			 */
+			private function getSource(e:FileActionEvent):void {
+				var myFA:FileActions = e.target as FileActions;
+				var ba:ByteArray = new ByteArray();
+				myFA.readAllBytes(ba);
+				this.input.text = ba.toString();
+				myFA.closeFile();
+			}
+			
+			/**
+			 * @private
+			 * Called by the Load AS Source button to pull in a file from the hard drive.
+			 */
+			private function loadSource():void {
+				var myFA:FileActions = new FileActions();
+				myFA.currentFile = File.documentsDirectory.resolvePath("/");
+				var fFilter:FileFilter = new FileFilter("ActionScript",".as");
+				myFA.addEventListener(FileActionEvent.OPEN_RO_COMPLETE,getSource);
+				myFA.openFile(fFilter,FileActions.READ);
+			}
+			
+			/**
+			 * @private
+			 * Compile the ActionScript within the text box and update the relative tabs.
+			 * 
+			 * @return A boolean indicating success or failure.
+			 */
+			private function compile():Boolean {
+				var src:String = input.text;
+				this.debug.text = "";
+				try {
+				  this.swfBytes = this.esc.eval(src);
+				  this.HV.initViewer(this.swfBytes);
+				  HV.updateHexArray();
+				  this.updateDump = true;
+				  dump();
+				  return (true);
+				} catch (e:Error) {
+					this.debug.text = e.toString();
+				}
+				return (false);
+			}
+			
+			/**
+			 * @private
+			 * Try to run the ActionScript within the context of this tool by loading it as a SWF
+			 */
+			private function eval():void {
+				clear();
+				if (!compile()) {
+					return;
+				}
+				if (ldr != null) {
+					ldr.unloadAndStop();
+				}
+				this.swfBytes.position = 0;
+				ldr = ABCLoader.loadBytes(this.swfBytes);
+			}
+			
+			/**
+			 * @private
+			 * Write the SWF to the hard drive and launch the web browser for viewing
+			 */
+			private function evalInBrowser():void {
+				if (!compile()) {
+					return;
+				}
+				wrapInSWF(true);
+				if (this.tempFA == null) {
+					this.tempFA = new FileActions();
+				}
+				
+				tempFA.createTempFile(null,"foo.swf");
+				tempFA.writeBytes(this.swfBytes);
+				tempFA.closeFile();
+				
+				var location:String = tempFA.currentFile.nativePath;
+				
+				navigateToURL(new URLRequest(location),"BrowserView");
+			}
+			
+			/**
+			 * @private
+			 * Archive the given source to the hard drive.
+			 * 
+			 * @param e The FileActionEvent from the saveSource call
+			 */
+			private function writeSource(e:FileActionEvent):void {
+				var myFA:FileActions = e.target as FileActions;
+				myFA.writeString(this.input.text);
+				myFA.closeFile();
+			}
+			
+			/**
+			 * @private
+			 * Allows the user to save their ActionScript to the file system.
+			 */
+			private function saveSource():void {
+				var myFA:FileActions = new FileActions();
+				myFA.currentFile = File.documentsDirectory.resolvePath("/");
+				var fFilter:FileFilter = new FileFilter("ActionScript","*.as");
+				myFA.addEventListener(FileActionEvent.CREATE_COMPLETE, writeSource);
+				myFA.openFile(fFilter,FileActions.CREATE,"foo.as");
+				
+			}
+			
+			/**
+			 * @private
+			 * Disassembles the provided ActionScript and saves it to the disassembly tab.
+			 *
+			 * @param verbose A boolean indicating whether it should be verbose disassembly.
+			 */
+			private function dump(verbose:Boolean = false):void {
+				if (this.updateDump || verbose) {
+					this.updateDump = false;
+				} else {
+					return;
+				}
+				if (this.sWriter == null) {
+					this.sWriter = new StringWriter();
+				} else {
+					sWriter.clear();
+				}
+				this.swfBytes.position = 0;
+
+				try {
+					if (this.HV.swfBytes == null || this.HV.swfBytes.length == 0) {
+						this.disassembly.text = "No data";
+						return;
+					} else if (this.HV.swfBytes[0] == 0x46 || this.HV.swfBytes[0] == 0x43) {
+						var swf:Swf = new Swf(this.HV.swfBytes,sWriter, verbose);
+						swf.dumpABC();
+					} else {
+						var abc:Abc = new Abc(this.HV.swfBytes,sWriter,verbose);
+						if (!verbose) {
+							abc.log.clear();
+						}
+						abc.dump();
+					}
+					
+					if (this.disassembly) {
+						this.disassembly.text = sWriter.output;
+					} else {
+						this.updateDump = true;
+					}
+				} catch (e:Error) {
+					if (this.disassembly) {
+						this.disassembly.text = e.message;
+					}
+				}
+			}
+			
+			/**
+			 * @public
+			 * Used by the disassembler for writing output
+			 * This is public because this class is an extension of the ILog interface
+			 */
+			public function print(... rest):void {
+				this.debug.text += rest[0];
+			}
+			
+			/**
+			 * @public
+			 * Used by the disassembler for writing output
+			 * This is public because this class is an implements of the ILog interface
+			 */
+			public function errorPrint(... rest):void {
+				this.debug.text += rest[0];
+			}
+			
+			/**
+			 * @public
+			 * Clears the output pane in the first window.
+			 * This is public because this class is an extension of the ILog interface
+			 */
+			public function clear():void {
+				this.debug.text = "";
+			}
+			
+			/**
+			 * @private
+			 * Wraps the compiled ActionScript in the appropriate SWF tags to make it a full SWF.
+			 * 
+			 * @param includeSprite A boolean indicating whether a Sprite is necessary for the SWF.
+			 */
+			private function wrapInSWF(includeSprite:Boolean = false):void {
+				this.swfBytes = ABCLoader.wrapInSWF([this.HV.swfBytes], includeSprite);
+				this.HV.initViewer(this.swfBytes);
+				HV.updateHexArray();
+			}
+			
+			/**
+			 * @private
+			 * This handles the visual aspects of the search and utilizes the HexViewer to perform the search.
+			 */
+			private function findHexString():void {
+				if (hexSearchText.text == null) {
+					return;
+				}
+				
+				var findNext:Boolean = false;
+				if (this.searchHexButton.label.indexOf("Find Next") == 0) {
+					findNext = true;
+				}
+				
+				var pos:int = 0;
+				if (this.hvSearchCB.selectedLabel.indexOf("String") == 0) {
+					pos = this.HV.findString(this.hexSearchText.text,findNext);
+				} else {
+					var re:RegExp = /^[A-Fa-f0-9]+$/g;
+					if (re.test(this.hexSearchText.text) == false) {
+						this.hvWrapText.text = 'Invalid Hex Characters';
+						this.hvWrapText.setStyle("color", 0xFF0000);
+						return;
+					}
+					pos = this.HV.findHexString(this.hexSearchText.text,findNext);
+				}
+				
+				var cp:CellPosition;
+				
+				if (pos != -1) {
+					this.hvDataGrid.selectedIndex = pos;
+					cp = new CellPosition(pos,this.HV.currentPosition.column);
+					this.hvDataGrid.selectedCell = cp;
+					this.hvDataGrid.ensureCellIsVisible(pos);
+					this.hvWrapText.text = "";
+					this.hvWrapText.setStyle("color",0xFFFFFF);
+					this.searchHexButton.label="Find Next";
+				} else if (pos == -1 && findNext == true) {
+					this.hvWrapText.text = 'Search Wrapped';
+					this.hvWrapText.setStyle("color", 0xFF0000);
+					
+					if (this.hvSearchCB.selectedLabel.indexOf("String") == 0) {
+						pos = this.HV.findString(this.hexSearchText.text,false);
+					} else {
+						pos = this.HV.findHexString(this.hexSearchText.text,false);
+					}
+					
+					this.hvDataGrid.selectedIndex = pos;
+					cp = new CellPosition(pos,this.HV.currentPosition.column);
+					this.hvDataGrid.selectedCell = cp;
+					this.hvDataGrid.ensureCellIsVisible(pos);
+					this.searchHexButton.label="Find Next";
+				} else if (pos == -1) {
+					this.hvDataGrid.selectedIndex = -1;
+					this.searchHexButton.label = "Find";
+					this.hvWrapText.text = 'Not Found';
+					this.hvWrapText.setStyle("color",0xFF0000);
+				}
+			}
+			
+			/**
+			 * @private
+			 * Called by loadFile once the bytes has been loaded
+			 * 
+			 * @param event The Event.COMPLETE event
+			 */
+			
+			private function readFile(e:Event):void {
+				var temp:ByteArray = new ByteArray();
+				temp.writeBytes(e.target.data);
+				temp.position = 0;
+				temp.endian = Endian.LITTLE_ENDIAN
+				this.HV.initViewer(temp);
+				this.updateDump = true;
+				this.HV.updateHexArray();
+			}
+			
+			/**
+			 * @private
+			 * Called by selectFile once a file has been selected to load the file
+			 * 
+			 * @param event The Event.SELECT event
+			 */
+			private function loadFile (e:Event):void {
+				fileRef.addEventListener(Event.COMPLETE,readFile);
+				fileRef.load();
+			}
+			
+			/**
+			 * @private
+			 * Load an ABC File
+			 */
+			private function selectFile():void {
+				if (fileRef != null) {
+					fileRef = null;
+				}
+				fileRef = new FileReference();
+				var abcFilter:FileFilter = new FileFilter("abc files (*.abc)","*.abc");
+				fileRef.addEventListener(Event.SELECT,loadFile);
+				fileRef.browse([abcFilter]);
+			}
+			
+			/**
+			 * @private
+			 * Cues the disassembler tab to re-analyze the HV.swfBytes collection
+			 */
+			private function updateDisassembler():void {
+				this.updateDump = true;
+				this.HV.copyHexArrayToSwfBytes();
+				this.winTN.selectedIndex = 1;
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:TabNavigator id="winTN" width="783" height="638" visible="true" x="2" y="12">
+		<s:NavigatorContent label="AS3 Compiler" width="100%" height="100%" tabIndex="0">
+			<s:Group width="794">
+				<mx:HDividedBox x="10" y="10" width="100%" height="584">
+					<s:Group width="50%" height="578">
+						<s:Label text="Source:" x="4" y="11"/>
+						<s:Button label="Compile" click="compile()" x="136" y="4"/>
+						<s:Button label="Run" click="eval()" x="209" y="4"/>
+						<s:Button label="Run in Browser" click="evalInBrowser()" x="282" y="4"/>
+						<s:TextArea id="input" width="390" height="508" editable="true" y="29">
+							<s:text><![CDATA[
+//If you plan to run the SWF in the browser
+//then use the following code
+namespace fd = "flash.display";
+use namespace fd;
+namespace ft = "flash.text";
+use namespace ft;
+
+class test extends Sprite {
+  function test() {
+	var t:TextField = new TextField();
+	t.text = "Hello";
+	addChild(t);
+  }
+}
+
+//To compile in this window and print
+//to your right use the following code.
+namespace ns = "utils.AS3Compiler";
+use namespace ns;
+
+Printer.print("Hello");
+							]]>
+							</s:text>
+						</s:TextArea>
+						<s:Button x="1" y="540" label="Load AS Source File" click="loadSource()"/>
+						<s:Button x="275" y="540" label="Save Source File" click="saveSource()"/>
+					</s:Group>
+					<s:Group width="372" height="579">
+						<s:Label text="Console" x="-13" y="7"/>
+						<!--<mx:Button label="Clear" click="clear()" x="293" y="3"/>-->
+						<s:TextArea id="debug" x="-10" y="29" width="362" height="550"
+									editable="false"/>
+					</s:Group>
+				</mx:HDividedBox>
+			</s:Group>
+		</s:NavigatorContent>
+		<s:NavigatorContent label="Disassembler" width="100%" height="100%" show="dump()" >
+			<s:Group>
+				<s:Label x="14" y="11" text="Source"/>
+				<s:Button x="653" y="4" label="Dump Verbose" click="dump(true)"/>
+				<s:TextArea id="disassembly" x="9" y="29" width="748" height="562" color="#FFFFFF"
+							contentBackgroundColor="#000000" editable="false"/>
+			</s:Group>
+		</s:NavigatorContent>
+		<s:NavigatorContent label="Hex Editor" width="100%" height="100%" tabIndex="1" backgroundColor="#60f3ea" x="30" y="16">
+			<s:Group>
+				<s:Button x="35" y="18" label="Load ABC File" click="selectFile()"/>
+				<s:TextInput x="369.45" y="16.1" width="180" id="hexSearchText" enabled="true" click="this.searchHexButton.label='Find';this.hvWrapText.text='';"/>
+				<mx:ComboBox x="556.9" y="17.75" id="hvSearchCB" dataProvider="{ this.hvSearchType }" width="96"></mx:ComboBox>
+				<s:Button x="661" y="18.25" label="Find" id="searchHexButton" click="findHexString()"/>
+				<s:Label id="hvWrapText" x="230" y="20" width="137" height="18"/>
+				<s:DataGrid selectionMode="multipleCells" id="hvDataGrid" x="33" y="57" width="728" height="501" dataProvider="{ this.HV.initDG }" enabled="true"
+							sortableColumns="false" editable="true" initialize="initializeDG()" gridItemEditorSessionSave="updateString(event)">
+					<s:columns>
+						<s:ArrayList>
+							<s:GridColumn headerText="Offset" dataField="offset" width="75" editable="false" sortable="false"/>
+							<s:GridColumn headerText="" dataField="space1" width="15" editable="false" sortable="false"/>
+							<s:GridColumn headerText="0" dataField="col0" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+							<s:GridColumn headerText="1" dataField="col1" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+							<s:GridColumn headerText="2" dataField="col2" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+							<s:GridColumn headerText="3" dataField="col3" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+							<s:GridColumn headerText="4" dataField="col4" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+							<s:GridColumn headerText="5" dataField="col5" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+							<s:GridColumn headerText="6" dataField="col6" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+							<s:GridColumn headerText="7" dataField="col7" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+							<s:GridColumn headerText="8" dataField="col8" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+							<s:GridColumn headerText="9" dataField="col9" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+							<s:GridColumn headerText="10" dataField="col10" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+							<s:GridColumn headerText="11" dataField="col11" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+							<s:GridColumn headerText="12" dataField="col12" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+							<s:GridColumn headerText="13" dataField="col13" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+							<s:GridColumn headerText="14" dataField="col14" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+							<s:GridColumn headerText="15" dataField="col15" width="30" editable="true" sortable="false" itemEditor="hexEditor.HexValidator"/>
+							<s:GridColumn headerText="" dataField="space2" width="15" editable="false" sortable="false"/>
+							<s:GridColumn headerText="String" dataField="string" editable="false" sortable="false"/>
+						</s:ArrayList>
+					</s:columns>
+				</s:DataGrid>
+				<s:Button x="33" y="569" label="Wrap In SWF" width="108" click="wrapInSWF()"/>
+				<s:Button x="157" y="569" label="Update Disassembler" click="updateDisassembler()"/>
+				<s:Button x="690.95" y="569" label="Save" id="hvSave" click="this.HV.saveToFile()" />
+			</s:Group>
+		</s:NavigatorContent>
+	</mx:TabNavigator>
+</s:Window>

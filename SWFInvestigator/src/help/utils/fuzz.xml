@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<fuzz>
+ 
+ <!-- int values -->
+ <type name="int">
+  <value>-3</value>
+  <value>3</value>
+ </type>
+ 
+ 
+ <!--uint values-->
+ <type name="uint">
+  <value>100</value>
+ </type>
+ 
+ 
+ <!-- Number values -->
+ <type name="Number">
+  <value>1</value>
+ </type>
+ 
+ 
+ <!-- XML values -->
+ <type name="XML">
+  <value><![CDATA[<bar/>]]></value>
+ </type>
+ 
+ 
+ <!-- Object values -->
+ <type name="Object">
+  <!-- First object value -->
+  <value name="Object1">
+    <param name="foo" type="String">bar</param>
+    <param name="bar" type="int">5</param>
+    <!-- Child objects are supported -->
+    <param name="objFoo" type="Object">
+      <![CDATA[
+		<value name="ObjectChild">
+ 			<param name="foo2" type="String">bar2</param>
+			<param name="bar2" type="int">2</param>
+  	    </value>
+  	  ]]>
+  	 </param>
+  </value>
+  
+  <!-- Second Object Value -->
+  <value name="Object2">
+   <param name="ob2foo" type="String">bar</param>
+  </value>
+ </type>
+ 
+ 
+ <!-- Class Values -->
+ <type name="Class">
+  <!-- The name is the name of the class in AS3 -->
+  <value name="mx.controls.TextArea">
+    <!-- The name is the property within the class that you want to set -->
+    <param name="text" type="String">bar</param>
+  </value>
+ </type>
+ 
+</fuzz>

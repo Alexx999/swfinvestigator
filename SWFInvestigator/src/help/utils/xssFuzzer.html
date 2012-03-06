@@ -1,0 +1,73 @@
+<HTML>
+<!-- 
+ /****************************************************************************
+ * ADOBE SYSTEMS INCORPORATED
+ * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+ * All Rights Reserved.
+ *  
+ * NOTICE: Adobe permits you to use, modify, and distribute this file
+ * in accordance with the terms of the license agreement accompanying it.
+ * ****************************************************************************/
+-->
+  <HEAD>
+    <TITLE>XSS Fuzzer</TITLE>
+    <LINK REL=StyleSheet HREF="../assets/fonts.css" TYPE="text/css">
+  </HEAD>
+  <BODY>
+    <H3>XSS Fuzzer</H3>
+    <P>
+    The XSS Fuzzer will allow you to test files on your local hard drive for common cross-site scripting (XSS) vulnerabilities. You
+    must know the FlashVars that the SWF accepts in order to use this feature. You can only test one file at a time.
+    </P>
+    <B>Target SWF</B><BR/>
+    <P>
+    Use the "Load SWF" button to select the file that you want to test.
+    </P>
+    <B>Flash Vars</B><BR/>
+    <P>
+    Specify the FlashVars that this SWF accepts. Use the traditional FlashVar format of "foo=1&bar=2".
+    </P>
+    <B>Attack Strings File</B><BR/>
+    <P>
+    This is the database of strings that will be passed to each FlashVar. The default file in configs/xssStrings.txt contains
+    the most common strings. Use the "Load Strings" button to select a different file.
+    </P>
+    <B>Attack Definitions File</B><BR/>
+    <P>
+    This is an XML file that corresponds to the Attack Strings File. The default file is configs/xssDescriptions.xml. When an
+    XSS issue is found, the fuzzer will check this XML document to determine whether there is a matching description of the
+    attack and solution. These definitions will show up in the Output tab when the user clicks on one of the successful
+    attack strings.
+    </P>
+    <B>Timeout for each test</B><BR/>
+    <P>
+    This fuzzer uses a series of events and timers. Therefore, each test takes approximately 5 seconds. If you change the default
+    strings to load SWFs from another server, then you may want to allow more time for each test. You shouldn't use a time value
+    below 3 seconds (3000) since the iframe contains a timer that doesn't fire until after 2 seconds.
+    </P>
+    <B>Set allowScriptAccess to Always</B><BR/>
+    <P>
+    The default allowScriptAccess setting for SWF content is "sameDomain". This is the setting that is enforced when an attacker
+    tricks a user into clicking on a malicious link that goes directly to a URL. However, if your content uses an allowScriptAccess
+    value of "always", then you may want to test your content with that setting. It can make a difference in the results. 
+    </P>
+    <B>Start Fuzzing</B><BR/>
+    <P>
+    Click this button to begin the test. The first test will begin after the time specified by the Timeout value. When the test
+    completes, the window will automatically switch you to the results panel.
+    </P>
+    <B>Output Panel</B><BR/>
+    <P>
+    On the left hand side of the Output Panel, there is a tree navigation display with the name of each FlashVar. Ignore the entry
+    for "baseline" since this particular tool does not run a baseline test. If you expand each FlashVar name, you will see the tests
+    that were conducted. If the icon next to the attack string is red, then that means the attack was successful. If the icon next
+    to the attackString is green, then the SWF is safe from that attack.
+    </P>
+    <B>Results</B><BR/>
+    <P>After clicking on in individual item within the navigation tree of the output panel, you will see result information under
+    <I>Results</I> on the right hand side. If the attack was unsuccessful, then it will just say, "No XSS Identified". If the attack
+    was successful, then XSS Fuzzer will check the XSS Descriptions file to determine whether it has a verbose description of the
+    attack and the solution. If it cannot find a corresponding entry in the descriptions file, then it will just say, "XSS Identified!".
+    </P>
+  </BODY>
+</HTML>

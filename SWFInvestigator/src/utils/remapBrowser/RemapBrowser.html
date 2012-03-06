@@ -1,0 +1,56 @@
+<HTML>
+ <!-- &copy; 2009 Adobe Systems Incorporated. All rights reserved.  -->
+ <HEAD>
+  <TITLE>Remap Browser</TITLE>
+ </HEAD>
+ <BODY>
+  <DIV>
+     <TABLE WIDTH="100%" BORDER="1">
+      <TR BORDER="1">
+       <TD><table width="100%"><tr><td style="width:150px">Content directory:</td><td><INPUT TYPE="TEXT" NAME="filePath" ID="filePath" VALUE="app-storage:/" style="width:100%"/></td></tr></table></TD>
+      </TR>
+      <TR BORDER="1">
+        <TD><table width="100%"><tr><td style="width:150px">Remote domain:</td><td><INPUT TYPE="TEXT" NAME="domain" ID="domain" VALUE="http://www.example.com:81/" style="width:100%"/></td></tr></table></TD>
+      </TR>
+	  <TR>
+	   <TD>
+	    <TABLE BORDER="0" width="100%">
+          <COLGROUP>
+            <COL WIDTH="80%"/>
+            <COL WIDTH="20%"/>
+          </COLGROUP>
+          <TR BORDER="1">
+       		<TD>Index page: <INPUT TYPE="TEXT" NAME="src" ID="src" VALUE="index.html"/></TD>
+       		<TD style="width:100px"><INPUT TYPE="submit" VALUE="Re-Map" onclick="rewriteDiv()"></TD>
+      	  </TR>
+         </TABLE>
+       </TD>
+      </TR>
+     </TABLE>
+  </DIV>
+  <DIV ID="LCmapper">
+  </DIV>
+  <SCRIPT TYPE="text/javascript">
+  <!--
+     
+     function writeLCEnumMap(domain,path,src) {
+ 		var div = document.getElementById("LCmapper");
+ 		var frameString = '<iframe id="LCEnum" height="100%" width="100%" scrolling="no" src="' + src + '" documentRoot="' + path + '" sandboxRoot="' + domain + '"/>';
+		div.innerHTML = frameString;
+		//alert (frameString);
+ 	  }
+ 	  
+ 	  function rewriteDiv() {
+ 	    var domain = document.getElementById("domain").value;
+ 	    var filepath = document.getElementById("filePath").value;
+ 	    var src = document.getElementById("src").value;
+ 	    writeLCEnumMap(domain,filepath,src);
+ 	    return (false);
+      }
+
+	  writeLCEnumMap("","","app:/utils/remapBrowser/rBrowserHello.html");
+     
+  //-->
+  </SCRIPT>
+ </BODY>
+</HTML>

@@ -1,0 +1,96 @@
+<html lang="en">
+<!-- 
+ /****************************************************************************
+ * ADOBE SYSTEMS INCORPORATED
+ * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+ * All Rights Reserved.
+ *  
+ * NOTICE: Adobe permits you to use, modify, and distribute this file
+ * in accordance with the terms of the license agreement accompanying it.
+ * ****************************************************************************/
+-->
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>getVars Wrapper</title>
+<script src="AC_OETags.js" type="text/javascript"/>
+<style>
+body { margin: 0px; overflow:scroll; width:400px; height=450px; }
+</style>
+</head>
+
+<body>
+<script language="JavaScript" type="text/javascript">
+<!--
+
+/*******
+**   getObject(element,action,args) 
+** calls Flash checkFlashObject method and gets the snapshot of an object
+** 
+*/
+function getObject(str,action,argsString){
+
+  var FlashObject= document.getAS3Vars.as3fetchVar(str,action,argsString);
+ 
+  return( FlashObject );
+}
+
+/*******
+** sendMessage(command, args) 
+** called by getVars.swf when parameters are undefined
+** 
+*/
+function sendMessage(command, args) {
+  //window.parentSandboxBridge.displayTrace("SendMessage: " + command);
+  window.parentSandboxBridge.addItem(command,args);
+}
+
+/*******
+** getAS3Vars_DoFSCommand(command, args) 
+** called by getVars.swf when parameters are undefined
+** 
+*/
+function getAS3Vars_DoFSCommand(command, args) {
+  alert('Caught FSCommand -- command: ' + command + ' -- args: ' + args);
+}
+
+-->
+</script>
+<script language="JavaScript" type="text/javascript">
+<!--
+	// if we've detected an acceptable version
+	// embed the Flash Content SWF when all tests are passed
+	var URL = window.location.href;
+	var splitURL = URL.split("?");
+	var urlVars = splitURL[1];
+	var info = urlVars.split("#");
+	
+	var childExposed = {};
+	childExposed.getVariable = getObject;
+	window.childSandboxBridge = childExposed;
+
+	//currently setting wmode to opaque to ensure the SWF doesn't obscure drop down menu
+	function foo() {
+		AC_FL_RunContent(
+			"src", info[0],
+			"FlashVars", info[1],
+			"width", "400",
+			"height", "400",
+			"align", "middle",
+			"id", "getAS3Vars",
+			"quality", "high",
+			"bgcolor", "#ffffff",
+			"name", "getAS3Vars",
+			"wmode","opaque",
+			"scale","default",
+			"allowScriptAccess", "sameDomain",
+			"type", "application/x-shockwave-flash",
+			"pluginspage", "http://www.adobe.com/go/getflashplayer"
+		);
+	
+	}
+	window.setTimeout(foo,2000);
+// -->
+</script>
+</body>
+</html>

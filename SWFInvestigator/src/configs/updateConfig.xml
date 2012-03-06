@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?> 
+<configuration xmlns="http://ns.adobe.com/air/framework/update/configuration/1.0" >
+	<url>http://127.0.0.1/update.xml</url>
+	<native_url>https://www.adobe.com/go/swfinvestigator_update</native_url>
+	<delay>0</delay>
+	<defaultUI>
+		<dialog name="checkForUpdate" visible="false" />
+		<dialog name="downloadUpdate" visible="true" />
+		<dialog name="downloadProgress" visible="true" />
+		<dialog name="installUpdate" visible="false" />    
+	</defaultUI>
+</configuration>

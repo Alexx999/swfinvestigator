@@ -1,0 +1,29 @@
+<HTML>
+<!-- 
+ /****************************************************************************
+ * ADOBE SYSTEMS INCORPORATED
+ * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+ * All Rights Reserved.
+ *  
+ * NOTICE: Adobe permits you to use, modify, and distribute this file
+ * in accordance with the terms of the license agreement accompanying it.
+ * ****************************************************************************/
+-->
+  <HEAD>
+    <TITLE>Strings Viewer</TITLE>
+    <LINK REL=StyleSheet HREF="../assets/fonts.css" TYPE="text/css">
+  </HEAD>
+  <BODY>
+    <H3>Strings Viewer</H3>
+	<P>This functionality currently only works for AS3 content due to the backend library that I am using.  It is the list of
+	strings extracted from the SWF.  You can search the strings list for interesting terms using the search functionality at the
+	top left of the tab. The number of identified strings is also displayed in the top left.</P>
+	<P><B>Security relevant strings</B><br>
+    The list in the bottom left of the tab displays a subset of the overall strings list. In this section, you will see strings
+    that suggest the use of security relevant APIs. The default list of terms is maintained in /configs/SecurityStrings.txt and
+    can be modified by the user. The user can also choose to load their own list at run time by using the <I>Choose</I> button
+    located at the bottom of the list. The comparison is a strict match based on the terms provided. Therefore, if one of the
+    security terms provided is "frame" and the SWF contains a string named "frame1", then it won't be identified as a match.
+    </P>
+  </BODY>
+ </HTML>

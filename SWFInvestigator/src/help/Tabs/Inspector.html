@@ -1,0 +1,59 @@
+<HTML>
+<!-- 
+ /****************************************************************************
+ * ADOBE SYSTEMS INCORPORATED
+ * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+ * All Rights Reserved.
+ *  
+ * NOTICE: Adobe permits you to use, modify, and distribute this file
+ * in accordance with the terms of the license agreement accompanying it.
+ * ****************************************************************************/
+-->
+  <HEAD>
+    <TITLE>Inspector</TITLE>
+    <LINK REL=StyleSheet HREF="../assets/fonts.css" TYPE="text/css">
+  </HEAD>
+  <BODY>
+    <H3>Inspector Overview</H3>
+	<P>The Inspector will behave slightly differently for AS2 and AS3 content.  For AS2 content, the Inspector will mimick the functionality of the OWASP
+	SWFIntruder project.  For AS3 content, the Inspector will allow you to manipulate the SWF by retrieving data values, assigning new values and calling
+	functions. To prevent accidental execution of a SWF, you must click the <I>Load Viewer</I> button to launch a SWF.</P>
+	<H3>AS2 Inspector</H3>
+	<P>The AS2 Inspector is modeled after the functionality provided within the OWASP SWFIntruder application.  The application starts by retrieving a list of
+	uninitialized values within the SWF.  Uninitiaized values in AS2 can be initialized by FlashVars and are therefore a vector for cross-site scripting.  You
+	can manipulate the FlashVars supplied to the application and determine how it responds.  You also have the ability to retrieve the value of any variable in
+	the SWF regardless of whether it was initialized.</P>
+	<B>Note:</B><P>This functionality currently only works for AS2 content loaded from the web.</P>
+	<H3>AS3 Inspector</H3>
+	<P>The AS3Inspector will behave slightly differently depending on whether the content is on a remote website or stored locally on the drive.  If it is stored
+	remotely then an HTMLLoader will be used to frame the SWF.  If it is stored locally, then the SWF is laoded using SWFLoader.  The attributes that are available
+	for testing are the same in either case.</P>
+    <B>Variable Entry</B>
+    <P>As you interact with the SWF, there are several places where you need to be able to supply variable information to the SWF.  A centralized library
+    is used to collect the variables so the interface is consistent throughout the application.  For instance, on the SWFIntruder tabs, you will see the
+    following data entry section:</P>
+    <img src="../assets/generalImages/VarEntry.jpg"><br/>
+    <b>Function/Variable Name</b><br/>
+    <P>In this section, you enter the variable you want to set, retrieve or call. In the case of an object, you would enter the name using dotted separation
+    in the same way you would in code.  For instance, assume you had an HTML text field within the SWF called, "foo".  If you wanted to set the html property of that
+    variable, then you would enter "foo.html" into the text box.  If you were to call a function, then you would still use the dotted notation.  For instance,
+    "foo.html.toString".</P>
+    <b>Function Parameters/New Value</b><br/>
+    <P>In this box, you enter the new value or parameters for the function. If you are only assigning a single variable to the variable, then you would enter
+    the value for the variable into the text field below the data grid.  Select the data type from the pull down menu just below that and then click "Add Parameter."
+    If you plan to call a function, then you can enter multiple parameters by repeating to enter in values, selecting the type and clicking "Add Parameter."</p>
+    <p>To change the value of a variable already within the table, click the "Value" cell for the piece of data and enter in the new value.  It will be updated when you
+    de-select the cell.</p>
+    <p>To delete data from the table, click the "Value" cell for the item that is to be removed and delete the value from the cell.  This will cause the row to be deleted
+    when you de-select the cell.</p>
+    <b>Entering Object Parameters</b><br/>
+    <p>Click <a href="../general/ObjectEntry.html">here</a> for information on how to add objects to the parameters list.</p>
+    <b>Executing the change or call</b><br/>
+    <p>The last step in the process is to select the action that you want to take which include "Retrieve Variable", "Call Function" or "Assign Variable."  Once selected,
+    click "Execute" to effect the change or call.</p>
+    <B>FlashVar Values</B><BR/>
+    <P>If you are loading a remote SWF that needs FlashVars, you can enter FlashVar Values at the bottom of the right hand column and click <I>Update</I> to reload the SWF
+    using the FlashVars.  The format for the FlashVars within the text field is the same as they would be within an embed tag.</P>
+	<B>Note:</B><p>The Variables box in the top right hand corner is still under development and is non-functional at this time.</p>
+  </BODY>
+ </HTML>

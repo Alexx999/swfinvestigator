@@ -1,0 +1,36 @@
+<HTML>
+<!-- 
+ /****************************************************************************
+ * ADOBE SYSTEMS INCORPORATED
+ * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+ * All Rights Reserved.
+ *  
+ * NOTICE: Adobe permits you to use, modify, and distribute this file
+ * in accordance with the terms of the license agreement accompanying it.
+ * ****************************************************************************/
+-->
+  <HEAD>
+    <TITLE>SWF Viewer</TITLE>
+    <LINK REL=StyleSheet HREF="../assets/fonts.css" TYPE="text/css">
+  </HEAD>
+  <BODY>
+    <H3>SWF Viewer</H3>
+	<P>The basic idea is that it allows you to load a SWF using different HTML configurations in a browser pane.
+	For instance, you can load a SWF from your local hard drive and have the browser pretend it was loaded from the specified domain,
+	with the specified FlashVars and the specified allowScriptAccess settings. If you need the SWF to have specific HTML,
+    then you can change the default HTML template the SWF. To prevent accidental execution of the SWF, you will not see anything in
+    the browser pane until you click "Load".</P><BR/>
+	<B>URL: </B> <P>The URL of the SWF to be loaded. This can be changed to any URL but it will be prepopulated with the current SWF.</P>
+	<B>allowScriptAccess/allowNetworking: </B><P>These will alter whether the parameters in the object tag for the SWF.  By default they are
+	disabled to prevent accidentally allowing the SWF to execute JavaScript.</P>
+	<B>Send Cookies: </B><P>Tells the AIR HTMLLoader whether to track system cookies between requests using the "manageCookies" property</P>
+	<B>FlashVars: </B><P>Enter the FlashVars for the SWF and they will be added to the FlashVars parameter in the object tag.</P>
+	<B>HTML Domain: </B><P>If you want to remap the HTML to a different domain, then enter in the domain in this field.</P>
+	<B>HTML Template: </B><P>The name of the template file in app-storage:/Viewer to use to load the SWF. Do <i>not</i> make changes to the
+	default template as they will be overwritten the next time the app starts.</P>
+	<B>Reload Button: </B><P>Reloads the HTML with the entered data.</P>
+	<B>Open Introspector</B><BR/>
+	<P>This will open the AIR Introspector.  This was originally added to help catch changes to the HTML by ExternalInterface.  However,
+	it currently doesn't seem to be as useful for that.  It is left here because it may be useful for something else in the future.</P>
+  </BODY>
+ </HTML>

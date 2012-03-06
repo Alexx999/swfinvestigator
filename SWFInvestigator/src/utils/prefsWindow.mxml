@@ -1,0 +1,489 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Window xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="314" height="478" title="Preferences" showStatusBar="false">
+	<fx:Script>
+		<![CDATA[
+			/****************************************************************************
+			 * ADOBE SYSTEMS INCORPORATED
+			 * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+			 * All Rights Reserved.
+			 *  
+			 * NOTICE: Adobe permits you to use, modify, and distribute this file
+			 * in accordance with the terms of the license agreement accompanying it.
+			 * ****************************************************************************/
+
+			import databaseUtils.PreferencesDB;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			
+			private var prefsInfo:Object;
+			
+			[Bindable]
+			private var decompilerList:ArrayCollection = new ArrayCollection();
+			
+			/**
+			 * @public
+			 * The pointer to the preferences database
+			 */
+			public var prefDB:PreferencesDB;
+			
+			/**
+			 * @public
+			 * This function fetches and stores information from the preferences DB.
+			 */
+			public function initInfo():void {
+				this.prefsInfo = prefDB.getPreferences();
+				this.decompilerList.source = prefDB.getDecompilerArray();
+			}
+			
+			/**
+			 * @private
+			 * This initializes the General Preferences tab with info from the database.
+			 * 
+			 * @param e The show event from the tab.
+			 */
+			private function init_general(e:Event):void {
+				this.fHistoryLength.text = prefsInfo.historyLength.value;
+				this.rMapPort.text = prefsInfo.remapPort.value;
+				this.dViewerTemplate.text = prefsInfo.viewerTemplate.value;
+				this.dUserAgent.text = prefsInfo.defaultUserAgent.value;
+				
+				//Added after internal release
+				//Therefore, you must check to see if it exists in their DB
+				if (prefsInfo.autoUpdateCheck != null) {
+					this.dAutoUpdate.selected = Boolean(int(prefsInfo.autoUpdateCheck.value));
+				}
+			}
+			
+			/**
+			 * @private
+			 * This initializes the Util Preferences tab with info from the database.
+			 * 
+			 * @param e The show event from the tab.
+			 */
+			private function init_utils(e:Event):void {
+				this.lcEnumDomain.text = prefsInfo.defaultLCDomain.value;
+				//This group of prefs added with 0.6.1
+				if (prefsInfo.serverIP != null) {
+					this.serverIP.text = prefsInfo.serverIP.value;
+					this.serverPort.text = prefsInfo.serverPort.value;
+					this.serverPath.text = prefsInfo.serverPath.value;
+					this.fuzzingDomain.text = prefsInfo.fuzzingDomain.value;
+				}
+			}
+			
+			/**
+			 * @private
+			 * This enables the Apply button once data changes.
+			 */ 
+			private function enableApply():void {
+				this.Apply.enabled = true;
+			}
+			
+			/**
+			 * @private
+			 * This updates the preferences database with the new values.
+			 */
+			private function updatePrefs():void {
+				var intPattern:RegExp = new RegExp("^[0-9]+$");
+				var result:Boolean;
+				if (this.rMapPort != null) {
+					result = intPattern.test(this.rMapPort.text);
+   					if (result == false || this.rMapPort.text == "" || int(this.rMapPort.text) > 65535 || int(this.rMapPort.text) < 1) {
+   						mx.controls.Alert.show("Remap Port must be an integer between 1 and 65535","Error",4,this);
+				    	return;
+   					}
+   				}
+   				
+   				if (this.fHistoryLength != null) {
+   					result = intPattern.test(this.fHistoryLength.text);
+   					if (result == false || this.fHistoryLength.text == "" || int(this.fHistoryLength.text) < 1) {
+   						mx.controls.Alert.show("History length must be an integer between > 1","Error",4,this);
+				    	return;
+   					}
+   				}
+
+   				if (this.dUserAgent != null) {
+   					if (this.dUserAgent.text == "") {
+   						mx.controls.Alert.show("The user agent field must contain a value.","Error",4,this);
+				    	return;
+   					}
+   				}
+				
+				if (this.lcEnumDomain) {
+					result = intPattern.test(this.serverPort.text);
+					if (result == false || this.serverPort.text == "" || int(this.serverPort.text) > 65535 || int(this.serverPort.text) < 1) {
+						mx.controls.Alert.show("Server Port must be an integer between 1 and 65535","Error",4,this);
+						return;
+					}
+				}
+
+				if (this.rMapPort) {
+					this.prefDB.updatePref("remapPort",this.rMapPort.text,false);
+					this.prefDB.updatePref("historyLength",this.fHistoryLength.text,false);
+					this.prefDB.updatePref("viewerTemplate",this.dViewerTemplate.text,false);
+					this.prefDB.updatePref("defaultUserAgent",this.dUserAgent.text);
+					if (this.dAutoUpdate.selected) {
+						this.prefDB.updatePref("autoUpdateCheck","1");
+					} else {
+						this.prefDB.updatePref("autoUpdateCheck", "0");
+					}
+				}
+				
+				if (this.lcEnumDomain) {
+					this.prefDB.updatePref("defaultLCDomain", this.lcEnumDomain.text, false);
+					this.prefDB.updatePref("serverIP", this.serverIP.text, false);
+					this.prefDB.updatePref("serverPort", this.serverPort.text, false);
+					this.prefDB.updatePref("serverPath", this.serverPath.text, false);
+					this.prefDB.updatePref("fuzzingDomain", this.fuzzingDomain.text);
+				}
+				
+				if (this.xssStrings) {
+					this.prefDB.updatePref("xssStrings", this.xssStrings.text, false);
+					this.prefDB.updatePref("xssDescriptions", this.xssDescriptions.text, false);
+					this.prefDB.updatePref("securityStrings", this.securityStrings.text, false);
+					this.prefDB.updatePref("amfDictionary", this.amfDictionary.text, false);
+
+				}
+			}
+			
+			/**
+			 * @private
+			 * This function calls updatePrefs and resets the Apply button after Apply has been clicked.
+			 */
+			private function applyPrefs():void {
+				updatePrefs();
+				this.Apply.enabled = false;
+			}
+			
+			
+			
+			/***********************
+			 * Decompiler Section  *
+			 * *********************/
+			
+			/**
+			 * @private
+			 * Fills in Decompiler tab text fields with data from dataGrid.
+			 */ 
+			private function populateDecTextFields(e:Event):void {
+				
+				if (e.target.selectedItem.name.length == 0) {
+					this.decAddButton.label = "Add";
+					this.decAddButton.enabled = true;
+					this.decDeleteButton.enabled = true;
+				} else if (e.target.selectedItem.name.indexOf("internal") == 0) {
+					this.decAddButton.enabled = false;
+					this.decDeleteButton.enabled = false;
+				} else {
+					this.decAddButton.label = "Update";
+					this.decAddButton.enabled = true;
+					this.decDeleteButton.enabled = true;
+				}
+				
+				this.decName.text = e.target.selectedItem.name;
+				this.decPath.text = e.target.selectedItem.path;
+				this.decArguments.text = e.target.selectedItem.arguments;
+			}
+			
+			/**
+			 * @private
+			 * Update decompiler information in the database
+			 */
+			private function updateDecompiler():void {
+				if (this.decName.text.length == 0) {
+					mx.controls.Alert.show("Please choose a decompiler to update","Error", 4, this);
+				} 
+				
+				//Make sure they didn't typo when providing the path
+				try {
+					var fTest:File = new File(this.decPath.text);
+					if (fTest.isDirectory) {
+						mx.controls.Alert.show("Please choose a file and not a directory for the decompiler path","Error",4,this);
+						return;
+					} else if (!fTest.exists) {
+						mx.controls.Alert.show("The selected file does not exist","Error",4,this);
+						return;
+					}
+				} catch (e:Error) {
+					mx.controls.Alert.show(e.message,"Error",4,this);
+					return;
+				}
+				
+				this.prefDB.updateDecompilerList(this.decName.text,this.decPath.text,this.decArguments.text);
+				this.decompilerList.source = prefDB.getDecompilerArray();
+			}
+			
+			/**
+			 * @private
+			 * Update decompiler information in the database
+			 */
+			private function deleteDecompiler():void {
+				if (this.decName.text.length == 0) {
+					mx.controls.Alert.show("Please choose a decompiler to delete","Error", 4, this);
+				} 
+				this.prefDB.deleteDecompiler(this.decName.text);
+				this.decompilerList.source = prefDB.getDecompilerArray();
+			}
+			
+			/**
+			 * @private
+			 * Browse for the location of the decompiler
+			 */
+			private function browseForDec():void {
+				var fileR:File = new File();
+				fileR.addEventListener(Event.SELECT,updateDecLocation);
+				fileR.browseForOpen ("Select File");
+
+			}
+			
+			/**
+			 * @private
+			 * Update Decompiler location text box
+			 */
+			private function updateDecLocation(evt:Event):void {				
+				this.decPath.text = evt.currentTarget.url;
+
+			}
+
+			/**
+			 * @private
+			 * Change the "Add" button to "Update"
+			 */
+			private function decSwitchLabel():void {
+				this.decAddButton.label = "Add";
+			}
+			
+			/**********************
+			 * Domains section
+			 **********************/
+			/**
+			 * @private
+			 * Sets the text box to the location of the directory
+			 * 
+			 * @param evt The Select Event
+			 */
+			private function onDirSelection(evt:Event):void {
+				this.serverPath.text = evt.target.url;
+				this.enableApply();
+			}
+			
+			/**
+			 * @private
+			 * This function creates the popUp window to select the directory file
+			 */
+			private function getServerPath():void {
+				var filePtr:File = File.documentsDirectory;
+				filePtr.addEventListener(Event.SELECT,onDirSelection);
+				filePtr.browseForDirectory("Choose the document root");
+			}
+			
+			
+			/**********************
+			 * Configs section
+			 **********************/
+			/**
+			 * @private
+			 * Sets the text box to the location of the XSS Strings File
+			 * 
+			 * @param evt The Select Event
+			 */
+			private function onXSSStringsSelection(evt:Event):void {
+				this.xssStrings.text = evt.target.url;
+				this.enableApply();
+			}
+			
+			/**
+			 * @private
+			 * This function creates the popUp window to select the XSS Strings file
+			 */
+			private function getXSSStringsPath():void {
+				var filePtr:File = File.applicationDirectory.resolvePath("configs");
+				filePtr.addEventListener(Event.SELECT,onXSSStringsSelection);
+				filePtr.browseForOpen("Choose the XSS strings text file");
+			}
+			
+			/**
+			 * @private
+			 * Sets the text box to the location of the Security Strings file
+			 * 
+			 * @param evt The Select Event
+			 */
+			private function onSecurityStringsSelection(evt:Event):void {
+				this.securityStrings.text = evt.target.url;
+				this.enableApply();
+			}
+			
+			/**
+			 * @private
+			 * This function creates the popUp window to select the Security Strings file
+			 */
+			private function getSecurityStringsPath():void {
+				var filePtr:File = File.applicationDirectory.resolvePath("configs");
+				filePtr.addEventListener(Event.SELECT,onSecurityStringsSelection);
+				filePtr.browseForOpen("Choose the security strings text file");
+			}
+			
+			/**
+			 * @private
+			 * Sets the text box to the location of the XSS Descriptions File
+			 * 
+			 * @param evt The Select Event
+			 */
+			private function onXSSDescriptionsSelection(evt:Event):void {
+				this.xssDescriptions.text = evt.target.url;
+				this.enableApply();
+			}
+			
+			/**
+			 * @private
+			 * This function creates the popUp window to select the XSS Descriptions file
+			 */
+			private function getXSSDescriptionsPath():void {
+				var filePtr:File = File.applicationDirectory.resolvePath("configs");
+				filePtr.addEventListener(Event.SELECT,onXSSDescriptionsSelection);
+				filePtr.browseForOpen("Choose the XSS Descriptions XML file");
+			}
+			
+			/**
+			 * @private
+			 * Sets the text box to the location of the AMF Dictionary File
+			 * 
+			 * @param evt The Select Event
+			 */
+			private function onAMFDictionarySelection(evt:Event):void {
+				this.amfDictionary.text = evt.target.url;
+				this.enableApply();
+			}
+			
+			/**
+			 * @private
+			 * This function creates the popUp window to select the AMF Dictionary file
+			 */
+			private function getAMFDictionaryPath():void {
+				var filePtr:File = File.applicationDirectory.resolvePath("configs");
+				filePtr.addEventListener(Event.SELECT,onAMFDictionarySelection);
+				filePtr.browseForOpen("Choose the AMFDictionary text file");
+			}
+			
+			/**********************
+			 * Close out handlers *
+			 * ********************/
+			
+			/**
+			 * @private
+			 * This closes the window when the user clicks cancel.
+			 */
+			private function cancelWindow():void {
+				this.close();
+			}
+			
+			/**
+			 * @private
+			 * If the window is closed, this will apply the updates before closing the window.
+			 */
+			private function closeWindow():void {
+				if (this.Apply.enabled) {
+					updatePrefs();
+				}
+				this.close();
+			}
+		]]>
+	</fx:Script>
+	<s:Group>
+		<mx:TabNavigator id="winTN" width="276" height="414" visible="true" horizontalCenter="0" verticalCenter="-14">
+			<s:NavigatorContent label="General" width="100%" height="100%" tabIndex="1" backgroundColor="#60f3ea">
+				<s:Group initialize="init_general(event)">
+					<s:Label x="10" y="25" text="Default file history length:"/>
+					<s:TextInput x="189" y="23" width="79" id="fHistoryLength" editable="true" change="enableApply()"
+								 toolTip="This affects the number of items in the File->Open Recent list"/>
+					<s:Label x="10" y="51" text="Sandbox Remap Port:" width="151"/>
+					<s:TextInput x="189" y="49" width="79" id="rMapPort" editable="true" change="enableApply()"
+								 toolTip="You only need to change this if you have web servers listening on this port"/>
+					<s:Label x="10" y="86" text="Default Viewer Template:" width="151"/>
+					<s:TextInput x="10" y="103" width="254" id="dViewerTemplate" editable="true" change="enableApply()"
+								 toolTip="You can change the default template used by the Viewer tab"/>
+					<s:Label x="10" y="142" text="HTTP User Agent" width="151"/>
+					<s:TextInput x="10" y="159" width="254" id="dUserAgent" editable="true" enabled="true" change="enableApply()"
+								 toolTip="The user-agent used in web requests"/>
+					<s:CheckBox x="10" y="202" width="254" id="dAutoUpdate" label="Check for updates at launch" selected="true" enabled="true" change="enableApply()"/>
+				</s:Group>
+			</s:NavigatorContent>
+			<s:NavigatorContent label="Decompilers" width="100%" height="100%" tabIndex="2" backgroundColor="#60f3ea">
+				<s:Group>
+					<s:DataGrid x="10" y="10" width="254" gridClick="populateDecTextFields(event)" id="decList" editable="false" dataProvider="{this.decompilerList}" height="149">
+						<s:columns>
+							<s:ArrayList>
+								<s:GridColumn headerText="Decompiler Name" dataField="id" visible="false"/>
+								<s:GridColumn headerText="Decompiler Name" dataField="name" visible="true"/>
+								<s:GridColumn headerText="Decompiler Name" dataField="path" visible="false"/>
+								<s:GridColumn headerText="Decompiler Name" dataField="arguments" visible="false"/>
+							</s:ArrayList>
+						</s:columns>
+					</s:DataGrid>
+					<s:Label x="10" y="178" text="Add/Update Decompiler" width="209"/>
+					<s:Label x="10" y="213" text="Name:"/>
+					<s:TextInput x="78" y="207" width="186" id="decName" editable="true" change="decSwitchLabel()"
+								 toolTip="The name is what you will see in the pull down menus"/>
+					<s:Label x="10" y="241" text="Location: "/>
+					<s:TextInput x="78" y="239" width="186" id="decPath" editable="true"
+								 toolTip="Provide the path to the executable. Paths with spaces will not work on Mac."/>
+					<s:Button x="194" y="267" label="Browse" click="browseForDec()"/>
+					<s:Label x="10" y="301" text="Arguments:"/>
+					<s:TextInput x="78" y="299" width="186" id="decArguments" editable="true"
+								 toolTip="The command line arguments for the tool. The path of the SWF will be appended to the end of this list"/>
+					<s:Button x="115" y="337" label="Add" id="decAddButton" click="updateDecompiler()"/>
+					<s:Button x="193" y="337" label="Delete" id="decDeleteButton" click="deleteDecompiler()"/>
+				</s:Group>
+			</s:NavigatorContent>
+			<s:NavigatorContent label="Domains" width="100%" height="100%" tabIndex="2" backgroundColor="#60f3ea">
+				<s:Group initialize="init_utils(event)">
+					<s:Label x="10" y="19" text="Default LCEnumerator Domain" width="209"/>
+					<s:TextInput x="10" y="36" width="258" id="lcEnumDomain" editable="true" change="enableApply()"
+								 toolTip="The default domain for the LC Communicator utility"/>
+					<mx:HRule x="6" y="72" width="100%"/>
+					<s:Label x="10" y="88" text="Default Web Server IP"/>
+					<s:TextInput id="serverIP" x="10" y="99" width="258" change="enableApply()" editable="true" text="127.0.0.1"
+								 toolTip="The IP address the Mini Web Server will listen on"/>
+					<s:Label x="10" y="131" text="Default Web Server Port"/>
+					<s:TextInput x="10" y="143" id="serverPort" editable="true" width="258" change="enableApply()" text="9080"
+								 toolTip="The default port for the Mini Web Server"/>
+					<s:Label x="10" y="176" text="Web Server Document Root"/>
+					<s:TextInput x="10" y="191" id="serverPath" editable="true" change="enableApply()" width="258"
+								 toolTip="The default document root for the Mini Web Server"/>
+					<s:Button x="196" y="217" label="Browse" click="getServerPath()"/>
+					<mx:HRule x="6" y="252" width="100%"/>
+					<s:Label x="10" y="263" text="Default Fuzzing Domain"/>
+					<s:TextInput x="10" y="276" id="fuzzingDomain" editable="true" change="enableApply()" width="258" text="http://www.example.com"
+								 toolTip="The default security domain that the SWFs will be loaded in for fuzzing"/>
+				</s:Group>
+			</s:NavigatorContent>
+			<s:NavigatorContent label="Configs" width="100%" height="100%" tabIndex="3" backgroundColor="#60f3ea">
+				<s:Group>
+					<s:Label x="11" y="11" text="Default XSS Strings Config"/>
+					<s:TextInput x="10" y="24" id="xssStrings" editable="true" change="enableApply()" width="258"
+								 text="app:/configs/xssStrings.txt" toolTip="The list of strings the XSS Fuzzer will try."/>
+					<s:Button x="196" y="50" label="Browse" click="getXSSStringsPath()"/>
+					<s:Label x="12" y="82" text="Default XSS Descriptions XML"/>
+					<s:TextInput x="10" y="97" id="xssDescriptions" editable="true" change="enableApply()" width="258"
+								 text="app:/configs/xssDescriptions.xml" toolTip="The descriptions file that accompanies the XSS Strings file"/>
+					<s:Button x="196" y="123" label="Browse" click="getXSSDescriptionsPath()"/>
+					<s:Label x="11" y="156" text="Default Security Strings File"/>
+					<s:TextInput x="10" y="174" id="securityStrings" editable="true" change="enableApply()" width="258"
+								 text="app:/configs/securityStrings.txt" toolTip="The default list of strings to look for in the Strings Tab"/>
+					<s:Button x="196" y="200" label="Browse" click="getSecurityStringsPath()"/>
+					<s:Label x="11" y="238" text="Default AMF Dictionary File"/>
+					<s:TextInput x="10" y="256" id="amfDictionary" editable="true" change="enableApply()" width="258"
+								 text="app:/configs/AMFDictionary.txt" toolTip="The list of names to try in the AMF Identifier"/>
+					<s:Button x="196" y="282" label="Browse" click="getAMFDictionaryPath()"/>
+				</s:Group>
+			</s:NavigatorContent>
+		</mx:TabNavigator>
+
+		<s:Button x="68" y="443" id="OK" label="OK" click="closeWindow()"/>
+		<s:Button x="142" y="443" id="Cancel" label="Cancel" click="cancelWindow()"/>
+		<s:Button x="216" y="442" id="Apply" label="Apply" enabled="false" click="applyPrefs()"/>
+	</s:Group>
+</s:Window>

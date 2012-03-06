@@ -1,0 +1,39 @@
+<HTML>
+<!-- 
+ /****************************************************************************
+ * ADOBE SYSTEMS INCORPORATED
+ * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+ * All Rights Reserved.
+ *  
+ * NOTICE: Adobe permits you to use, modify, and distribute this file
+ * in accordance with the terms of the license agreement accompanying it.
+ * ****************************************************************************/
+-->
+  <HEAD>
+    <TITLE>Hex Viewer</TITLE>
+    <LINK REL=StyleSheet HREF="../assets/fonts.css" TYPE="text/css">
+  </HEAD>
+  <BODY>
+    <H3>Hex Viewer</H3>
+    <P>The Hex Viewer allows you to view and edit the raw SWF bytes in the original format or as a decompressed SWF if the file was originally saved as a compressed SWF.
+    The Hex Viewer can be a little slow with larger files so please be patient.</P>
+    <P><B>Viewing the Hex</B><br>
+    If the original SWF was compressed, then you can view the SWF either in its original form or as a decompressed SWF.  Decompression is done using the builtin ActionScript decompress API.
+    If the SWF was originally decompressed, then you can only view it in it's original decompressed form.<br>
+    <B>Note:</B> Choosing to view the Original SWF after you have made changes to a decompressed SWF will result in any changes being lost.</P>
+    <P><B>Editing the Hex</B><br>
+    You can edit the Hex inline.  Editing the hex in columns 0 - 15 will automatically update the string column.
+    </P>
+    <P><B>Saving the Changes</B><br>
+    If the file was originally compressed, you will have the option to save the file either re-compressed using the ActionScript compress API or in the new decompressed format.
+    If the original file was not in a compressed format, then you will only have the option to save the file as a decompressed file.
+    </P>
+    <P><B>Copying and deleting data from the grid</B><br>
+    You can select multiple cells from the data grid and use Ctrl-C to copy the data to the system clipboard. The hex digits will be copied to the clipboard as comma separated string data e.g. de,ad,be,ef
+    To select a range of cells, you do not need to highlight each individual cell. You can just highlight the first and last cell to be copied.
+    Using Ctrl-X and Ctrl-V work similarly. In order to paste, the source data must also be in the same string format as copying from the data grid.
+    If you use Ctrl-A to select all, only the binary data will be copied to the clipboard. The "offset","string" and space columns will not be copied.
+    You can also paste the data into the Binary Editor <i>Source data</i> text field for copying the hex into the Binary Editor data grid. 
+    </P>
+  </BODY>
+ </HTML>
