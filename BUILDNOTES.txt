@@ -1,0 +1,26 @@
+Adobe SWF Investigator Beta build notes
+
+Requirements:
+   Flash Builder 4.5 or later
+   Adobe Flex SDK 4.6 or later
+   AIR 3.1 or later
+
+Setting up Flash Builder:
+   1. Create a new Flash Builder workspace.
+      Copy all of the project files into that workspace folder.
+      All the projects will assume that they can cross-reference each other relative to that directory.
+   
+   2. Import all of the projects as Flash Builder projects.
+      The as3crypto_source folder does not get imported but it does need to be in the same directory as the other project folders.
+
+   3. You may see 3 warnings from the ParamHandlers project.
+      To resolve the warnings, right click on the project and select Properties.
+      Select Flex Library Build Path. Within that view, select the Library Path tab.
+      Finally set framework linkage to its default (external).
+      Once you resolve the warnings, the project will build the swc files for the bin directory.
+
+   4. Build the overall application using the SWFInvestigator project.
+      The project should build cleanly.
+      You can export as either an AIR application or Native Application.
+      Versions compiled as an AIR application cannot support native disassemblers.
+      
