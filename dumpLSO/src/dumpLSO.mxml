@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx" width="352" height="585" backgroundColor="#60f3ea">
+	<fx:Script>
+		<![CDATA[
+			/****************************************************************************
+			 * ADOBE SYSTEMS INCORPORATED
+			 * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+			 * All Rights Reserved.
+			 *  
+			 * NOTICE: Adobe permits you to use, modify, and distribute this file
+			 * in accordance with the terms of the license agreement accompanying it.
+			 * ****************************************************************************/
+
+			import mx.collections.ArrayCollection;
+			//import mx.controls.Alert;
+			//import mx.utils.ObjectUtil;
+			
+			import flash.utils.describeType;
+			import ParamHandlers.ObjectParser;
+		
+			[Bindable]
+            private var varTypes:ArrayCollection = new ArrayCollection(
+                [ {label:"String", data:"String"}, 
+                  {label:"int", data:"int"},
+                  {label:"Array", data:"Array"},
+                  {label:"Number", data:"Number"},
+                  {label:"Boolean", data:"Boolean"},
+                  {label:"uint", data:"uint"},
+                  {label:"XML", data:"XML"},
+                  {label:"null", data:"null"} ]);
+
+			[Bindable]
+            private var amfTypes:ArrayCollection = new ArrayCollection(
+                [ {label:"AMF3", data:"AMF3"}, 
+                  {label:"AMF0", data:"AMF0"} ]);
+                  
+            private var currentLSO:SharedObject;
+            
+            private var lsoInfo:Object = new Object;
+
+            
+            /**
+             * @private
+             * This will update the LSO based on the information entered into the text fields.
+             */
+            private function updateLSO():void {
+            	var data:*;
+            	
+            	var type:String = this.sType1.selectedItem.data;
+				switch (type) {
+            		case "int":
+            			data = int(this.lsoValue.text);
+						break;
+            		case "Array":
+            			data = this.lsoValue.text.split(",");
+						break;
+            		case "null":
+            			data = null;
+						break;
+            		case "Number":
+            			data = Number(this.lsoValue.text);
+						break;
+            		case "XML":
+            			data = new XML(this.lsoValue.text);
+						break;
+            		case "uint":
+            			data = uint(Number(this.lsoValue.text));
+						break;
+            		case "Boolean":
+            			if (this.lsoValue.text == "true" || this.lsoValue.text == "1") {
+            				data = true;
+            			} else {
+            				data = false;
+            			}
+						break;
+            		default:
+            			data = this.lsoValue.text;
+            	}            	
+            	
+            	var tArray:Array = this.lsoName.text.split(".");
+            	
+            	var dArray:Array = new Array();
+            	var dFlag:int = -1;
+            	
+            	if (this.amfVersion.selectedItem.data == "AMF0") {
+            		this.currentLSO.objectEncoding = ObjectEncoding.AMF0;
+            	} else {
+            		this.currentLSO.objectEncoding = ObjectEncoding.AMF3;
+            	}
+            	
+            	for each (var name:* in tArray) {
+            		if (dFlag == -1 && tArray.length == 1) {
+            			currentLSO.data[name] = data;
+            		} else if (tArray.length == dFlag + 2) {
+            			dArray[dFlag][name] = data;
+            		} else if (dFlag == -1) {
+            			dArray.push(currentLSO.data[name]);
+            		} else {
+            			dArray.push(dArray[dFlag][name]);
+            		}
+            		dFlag++;
+            	}
+            	
+            	this.currentLSO.flush();
+            	            	
+            	getInfo(true);
+            }
+			
+			/**
+			 * @private
+			 * Retrieve the info for the local shared object.  This is launched by setTimeout or manually.
+			 * 
+			 * @param manual Boolean determining it is a manual refresh of the data (default false).
+			 */
+			private function getInfo(manual:Boolean = false):void {
+				var mySO:SharedObject;
+				var outputData:String = "";
+				var conn:LocalConnection = new LocalConnection;
+
+
+				if (!manual) {
+					this.lsoInfo.lsoName = "";
+					this.lsoInfo.lsoPath = "";
+					this.lsoInfo.lsoSecure = "";
+
+				
+					try {
+    					var paramObj:Object = LoaderInfo(this.root.loaderInfo).parameters;
+    					this.lsoInfo.lsoName = String(paramObj["lsoName"]);
+    					if (paramObj["lsoPath"] != null) {
+    						this.lsoInfo.lsoPath = String(paramObj["lsoPath"]);
+    					}
+    					if (paramObj["lsoSecure"] != null) {
+    						this.lsoInfo.lsoSecure = String(paramObj["lsoSecure"]);
+    					}
+					} catch (error:Error) {
+						//trace(error);
+					}
+				}
+				
+				displayTest.text = "lsoName: " + this.lsoInfo.lsoName + "\r" + "Domain: " + conn.domain.toString() + "\r";
+				
+				var lSecure:Boolean = false;
+				if (this.lsoInfo.lsoSecure.indexOf("true") == 0) {
+					lSecure = true;
+				} 
+				displayTest.text += "Secure: " + this.lsoInfo.lsoSecure + "\r";
+		
+				if (this.lsoInfo.lsoPath != null && this.lsoInfo.lsoPath.length > 0) {
+					displayTest.text += "lsoPath: " + this.lsoInfo.lsoPath + "\r";
+					try {
+						mySO = SharedObject.getLocal(this.lsoInfo.lsoName,this.lsoInfo.lsoPath,lSecure);
+					} catch (error:Error) {
+						//Typically thrown if "Allow third party content to store data on your computer" is
+						//not set within the Flash settings manager.
+						displayTest.text += error.toString() + "\r\r";
+					}
+				} else {
+					displayTest.text += "lsoPath: default\r";
+					try {
+						mySO = SharedObject.getLocal(this.lsoInfo.lsoName,null,lSecure);
+					} catch (error:Error) {
+						//Typically thrown if "Allow third party content to store data on your computer" is
+						//not set within the Flash settings manager.
+						displayTest.text += error.toString() + "\r\r";
+					}
+				}
+				
+				this.currentLSO = mySO;
+				
+				//displayTest.text += "Object Encoding: " + mySO.objectEncoding.toString() + "\r";
+				
+				displayTest.text += "---------------------\r\r";
+				
+				var oParser:ObjectParser = new ObjectParser();
+				if (mySO != null && mySO.data && mySO.data != null) {
+					//outputData += ObjectUtil.toString(mySO.data);
+					outputData += oParser.arrayToString(mySO.data);
+				} else {
+					outputData += "Could not retrieve data";
+				}
+			
+				displayTest.text = displayTest.text + outputData;
+			}
+			
+			private var intervalId:uint = setTimeout(getInfo,500);
+		]]>
+	</fx:Script>
+	
+	<s:Label x="10" y="10" text="Name"/>
+	<s:TextInput x="55" y="8" id="lsoName" width="287"/>
+	<s:Label x="10" y="36" text="Value"/>
+	<s:TextInput x="54" y="34" id="lsoValue" width="287"/>
+	<s:DropDownList x="51" y="64" width="104" dataProvider="{this.varTypes}" id="sType1"/>
+	<s:Button x="267" y="97" label="update" click="updateLSO()"/>
+	<s:TextArea x="5" y="125" width="342" height="450" id="displayTest" editable="true" enabled="true" lineBreak="toFit" text="Testing..."/>
+	<s:Label x="173" y="66" width="92" text="AMF Encoding:"/>
+	<s:DropDownList x="263" y="64" width="79" id="amfVersion" enabled="true" dataProvider="{this.amfTypes}"/>
+	<s:Label x="10" y="66" text="Type"/>
+</s:Application>
