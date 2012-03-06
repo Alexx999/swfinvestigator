@@ -1,0 +1,327 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+		   xmlns:s="library://ns.adobe.com/flex/spark"
+		   xmlns:mx="library://ns.adobe.com/flex/mx" height="222" width="395" initialize="onInitialize()">
+	<fx:Script>
+		<![CDATA[
+			/****************************************************************************
+			 * ADOBE SYSTEMS INCORPORATED
+			 * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+			 * All Rights Reserved.
+			 *  
+			 * NOTICE: Adobe permits you to use, modify, and distribute this file
+			 * in accordance with the terms of the license agreement accompanying it.
+			 * ****************************************************************************/
+
+			import ParamHandlers.CollectionReturnEvent;
+			import ParamHandlers.ObjectCollection;
+			
+			import mx.collections.ArrayCollection;
+			//import spark.events.DropdownEvent;
+			//import mx.events.ListEvent;
+			
+			import spark.events.GridItemEditorEvent;
+			
+			/**
+			 * Dispatched when the user clicks Create to save and close the window
+			 * 
+			 * @eventType ParamHandlers.CollectionReturnEvent.LAUNCH_EDITOR
+			 */
+			[Event(name="launchEditor", type="CollectionReturnEvent")]
+		
+			[Bindable]
+            private var varTypes:ArrayCollection = new ArrayCollection(
+                [ {label:"String", data:"String"}, 
+                  {label:"int", data:"int"},
+                  {label:"Array", data:"Array"},
+                  {label:"Number", data:"Number"},
+                  {label:"uint", data:"uint"},
+                  {label:"XML", data:"XML"},
+                  {label:"Boolean", data:"Boolean"},
+                  {label:"null", data:"null"} ]);
+                  
+            [Bindable]
+            private var sDGArray:ArrayCollection = new ArrayCollection(new Array());
+            
+			/**
+			 * Should this support adding Objects to the Array.
+			 */
+			public var includeObject:Boolean = false;
+			
+			/**
+			 * Should this support adding Classes to the Array.
+			 */
+			public var includeClass:Boolean = false;
+			
+			/**
+			 * Should this display fuzzing options
+			 */
+			public var showFuzz:Boolean = false;
+			
+			//The arrays for tracking objects and classes.
+			private var objectsArr:Array;
+			private var classArr:Array;
+			
+			private var objCol:ObjectCollection;
+			//private var objLdr:ObjectLoader;
+
+			
+			/**
+			 * @private
+			 * On initialize add Class and Object options if enabled by the include flags.
+			 */
+			private function onInitialize():void {
+				if (this.includeObject) {
+					varTypes.addItem({label:"Object", data:"Object"});
+				}
+				
+				if (this.includeClass) {
+					varTypes.addItem({label:"Class", data:"Class"});
+					//varTypes.addItem({label:"dClass", data:"dClass"});
+				}
+				
+				if (this.showFuzz) {
+					this.fuzzField.visible = true;
+				}
+			}
+
+			/**
+			 * This function will return the array of parameters entered into this control
+			 * 
+			 * @return An array of the selected parameters
+			 */
+			public function getFuncParams():Array {
+				var args:Array = new Array();
+				for (var i:int = 0; i < this.sDGArray.length; i++) {
+					var temp:Object = this.sDGArray.getItemAt(i);
+					switch (temp.type) {
+						case "int":
+							args.push(int(temp.value));
+							break;
+						case "String":
+							args.push(temp.value);
+							break;
+						case "Array":
+							args.push(temp.value.split(","));
+							break;
+						case "null":
+							args.push(null);
+							break;
+						case "Number":
+							args.push(Number(temp.value));
+							break;
+						case "XML":
+            				args.push(new XML(temp.value));
+							break;
+            			case "uint":
+            				args.push(uint(Number(temp.value)));
+							break;
+            			case "Boolean":
+            				var b:Boolean = false;
+            				if (temp.value == "true" || temp.value == "1") {
+            					b = true;
+            				}
+            				args.push(b);
+							break;
+            			case "Object":
+            				args.push(this.objectsArr[int(temp.value)]);
+							break;
+            			case "Class":
+            				args.push(this.classArr[int(temp.value)]);
+							break;
+						default :
+            		}
+    			}
+				return (args);
+			}
+			
+			/**
+			 * Return which variables need to be fuzzed
+			 * 
+			 * @return The dataGrid as an Array of objects for fuzzing
+			 */
+			public function getRawParams():Array {
+				var args:Array = new Array();
+				for (var i:int = 0; i < this.sDGArray.length; i++) {
+					var temp:Object = this.sDGArray.getItemAt(i);
+					args.push(temp);
+				}
+				return(args);
+			}
+
+			/**
+			 * Unlike the name implies, this current returns the parameters as a delimited string.
+			 * 
+			 * This is currently for the AS3Inspector.  Eventually, need to switch this to XML.
+			 * Currently a lame hack.
+			 * 
+			 * @return The string representing the parameters.
+			 */
+			public function getFuncParamsXML():String {
+				var args:String = new String();
+				for (var i:int = 0; i < this.sDGArray.length; i++) {
+					if (i > 0) {
+						args += "||||||";
+					}
+					var temp:Object = this.sDGArray.getItemAt(i);
+					args += temp.type + "&&&&&&" + temp.value;
+				}
+				return (args);
+			}
+
+			/**
+			 * @private
+			 * Adds a name and value to the Data Grid
+			 */
+			private function funcAddParam():void {
+				var temp:Object = new Object;
+				temp.fuzz = "n";
+				temp.type = this.sType1.selectedItem.data;
+				if (temp.type != "null") {
+					temp.value = this.sVar1.text;
+				} else {
+					temp.value = "*NULL*";
+				}
+				this.sDGArray.addItem(temp);
+			}
+
+			/**
+			 * Checks to see if row deletion is necessary, and deletes the row from the data grid.
+			 * 
+			 * @param dgEvent The data grid event fired from gridItemEditorSessionSave
+			 */
+			private function updateFuncDG(dgEvent:GridItemEditorEvent):void {
+				
+				if (dgEvent.columnIndex == 0 && dgEvent.currentTarget.selectedItem.fuzz != "n" && dgEvent.currentTarget.selectedItem.fuzz != "y") {
+					var obj:Object = this.sDGArray.getItemAt(dgEvent.rowIndex);
+					obj.fuzz = "n";
+					this.sDGArray.setItemAt(obj,dgEvent.rowIndex);
+				}
+				
+				if (dgEvent.columnIndex == 1) {
+					if (dgEvent.currentTarget.selectedItem.value.length == 0) {
+						this.sDGArray.removeItemAt(dgEvent.rowIndex);
+					}
+				}
+			}
+			
+			/**
+			 * An event listener for the Object Collection window when an object is ready for the Array.
+			 * 
+			 * @param e A CollectionReturnEvent from the Object Collection window.
+			 */
+			private function gotObject (e:CollectionReturnEvent):void {
+				if (this.objectsArr == null) {
+					this.objectsArr = new Array();
+				}
+				
+				this.objectsArr.push(e.currentTarget.returnObject);
+				var temp:Object = new Object;
+				temp.fuzz = "n";
+				temp.type = "Object";
+				temp.value = this.objectsArr.length - 1;
+				this.sDGArray.addItem(temp);
+				this.objCol = null;
+				this.sType1.selectedIndex = 0;
+			}
+
+			/**
+			 * An event listener for the Object Collection window when a class is ready for the Array.
+			 * 
+			 * @param e A CollectionReturnEvent from the Object Collection window.
+			 */			
+			private function gotClass (e:CollectionReturnEvent):void {
+				if (this.classArr == null) {
+					this.classArr = new Array();
+				}
+				
+				this.classArr.push(e.currentTarget.returnClass);
+				var temp:Object = new Object;
+				temp.type = "Class";
+				temp.fuzz = "n";
+				temp.value = this.classArr.length - 1;
+				this.sDGArray.addItem(temp);
+				this.objCol = null;
+				this.sType1.selectedIndex = 0;
+			}
+			
+			/**
+			 * An event listener for the Object Collection window when a class is ready for the Array.
+			 * 
+			 * @param e A CollectionReturnEvent from the Object Collection window.
+			 */
+			/**
+			private function gotDClass (e:CollectionReturnEvent):void {
+				if (this.classArr == null) {
+					this.classArr = new Array();
+				}
+				
+				this.classArr.push(e.currentTarget.cObject);
+				var temp:Object = new Object;
+				temp.type = "dClass";
+				temp.value = this.classArr.length - 1;
+				this.sDGArray.addItem(temp);
+				//this.objLdr = null;
+				this.sType1.selectedIndex = 0;
+			}
+			*/
+			
+			/**
+			 * When a comboBox selection is made, determines whether to launch the Object Collection window.
+			 * 
+			 * @param ev The DropDownEvent from the combo box.
+			 */
+			private function comboSelect():void {
+				if (this.sType1.selectedItem.data.indexOf("Class") == 0) {
+					this.objCol = new ObjectCollection(true);
+					//this.objCol.addClassBox();
+					this.objCol.addEventListener(CollectionReturnEvent.PARAMS_RETURNED,gotClass);
+					this.objCol.createPopUp(this);
+				} else if (this.sType1.selectedItem.data.indexOf("Object") == 0) {
+					this.objCol = new ObjectCollection(false);
+					this.objCol.addEventListener(CollectionReturnEvent.PARAMS_RETURNED,gotObject);
+					this.objCol.createPopUp(this);
+				} /**
+				 * else if (ComboBox(ev.target).selectedItem.data.indexOf("dClass") == 0) {
+					
+					this.objLdr = new ObjectLoader();
+					this.objLdr.addEventListener(CollectionReturnEvent.PARAMS_RETURNED,gotDClass);
+					this.objLdr.createPopUp(this);
+				
+				}*/
+			}
+			
+			/**
+			 * Allow PopUp Window to be closed on window close events.
+			 */
+			public function closePopUp():void {
+				if (this.objCol != null) {
+					this.objCol.closePopUp(null);
+				}
+				/**				
+				if (this.objLdr != null) {
+					this.objLdr.closePopUp(null);
+				}
+				 */
+			}
+		]]>
+	</fx:Script>
+
+	<!--width="223"-->
+	<s:DataGrid width="100%" height="161" dataProvider="{this.sDGArray}" editable="true"
+				gridItemEditorSessionSave="updateFuncDG(event)">
+		<s:columns>
+			<s:ArrayList>
+				<s:GridColumn headerText="Fuzz (y/n)" id="fuzzField" dataField="fuzz" visible="false" width="80"/>
+				<s:GridColumn headerText="Value" dataField="value"/>
+				<s:GridColumn headerText="Type" dataField="type" width="80"/>
+			</s:ArrayList>
+		</s:columns>
+	</s:DataGrid>
+	<s:TextInput id="sVar1" x="3" y="169" width="100%"
+				 toolTip="The value to add to the call"/>
+	<s:DropDownList id="sType1" x="4" y="196" width="116" close="comboSelect()" dataProvider="{this.varTypes}" prompt="Choose Type"
+					toolTip="The data type for the value specified on the left"/>
+	<s:Button x="129" y="196" label="Add Parameter" click="funcAddParam()"
+			  toolTip="Add the parameter to the data set in the table above"/>
+</s:Group>

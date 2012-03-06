@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<flexLibProperties includeAllClasses="false" useMultiPlatformConfig="false" version="1">
+  <includeClasses>
+    <classEntry path="Fuzzer.FuzzerDB"/>
+    <classEntry path="Fuzzer.FuzzerLogger"/>
+    <classEntry path="ParamHandlers.AMFGeneric"/>
+    <classEntry path="ParamHandlers.CollectionReturnEvent"/>
+    <classEntry path="ParamHandlers.ObjectCollection"/>
+    <classEntry path="ParamHandlers.ObjectCollectionLC"/>
+    <classEntry path="ParamHandlers.ObjectParser"/>
+    <classEntry path="ParamHandlers.ParamCollection"/>
+  </includeClasses>
+  <includeResources/>
+  <namespaceManifests/>
+</flexLibProperties>
