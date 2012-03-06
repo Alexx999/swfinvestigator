@@ -1,0 +1,47 @@
+Alchemy Samples
+------------------------------
+The following sample applications will help you get started using Alchemy. These are applications built by Adobe engineers to demonstrate the capabilities of Alchemy. By downloading this sample application, you confirm that you have read and agree to the terms of the Alchemy SDK License Agreement included with the samples. In addition, use of the OpenSSL library within this sample is not governed by the Alchemy SDK License but is rather governed by the license found within the relevant code file.
+
+This sample demonstrates compiling and using the OpenSSL library within Flash or AIR with the Alchemy SDK.
+
+This sample was developed using software developed by the OpenSSL Project for use in the OpenSSL Toolkit (http://www.openssl.org/)"
+
+
+Using OpenSSL
+-----------------------------
+You can download and compile the OpenSSL library yourself to link against. This sample has been tested against openssl-0.9.8g, but it should work against higher versions as well.
+
+You should configure OpenSSL using:
+PATH=$ALCHEMY_HOME/achacks:$PATH \
+./Configure BSD-x86 --prefix=$ALCHEMY_HOME/openssl -no-hw -no-asm -no-threads -no-shared -no-dso
+
+You can then compile OpenSSL using: 
+PATH=$ALCHEMY_HOME/achacks:$PATH \
+make clean ; make
+
+You must copy the crypto.l.bc file from the OpenSSL install folder to $ALCHEMY_HOME/openssl/lib.
+
+
+Compiling the sample
+-----------------------------
+Now you are ready to "make" the sample and try it out. 
+After make is complete, you will have two files you can use:
+  as3_crypto_wrapper.swc
+  as3_crypto_wrapper.as
+
+To use these, you need to include the .as file in your Flex/AIR project. You will also need to add the SWC to the list of linked frameworks. A sample Flex application is included that shows hows this works. You also need to make sure your Flex project in including the Flex 3.2 SDK.
+
+
+Other notes
+----------------------------
+There is a bug in the generated as3_crypto_wrapper.as. It neglects to import flash.utils.ByteArray. Please add this import line prior to using the file within your Flex project.
+ 
+I have not exposed all the myriad functions available in OpenSSL. It is a very functional product and I encourage you to expose the additional functionality you need. Please contribute back any changes to the community (http://labs-staging.macromedia.com/wiki/index.php/Alchemy:Libraries:Shared).
+
+I have not spent a lot of time tweaking the size and performance. There are improvements to be made but I wanted to get something out sooner rather than later.
+
+This sample was constructed using "gluegen". This is a command line tool included with Alchemy. You can run "gluegen -help" to see its parameters. Basically it takes a .gg file and generates both a C output file for compilation by Alchemy and an AS file for including in FlexBuilder. This automates the process of building a wrapper for exposing an existing C library. Some minimal documentation is available with the Alchemy SDK documentation, but you can review the generated AS and C files to get the gist of what it does.
+
+Enjoy! 
+
+Joe Steele
