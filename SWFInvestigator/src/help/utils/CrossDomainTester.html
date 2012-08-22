@@ -1,0 +1,69 @@
+<HTML>
+ <!-- 
+ /****************************************************************************
+ * ADOBE SYSTEMS INCORPORATED
+ * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+ * All Rights Reserved.
+ *  
+ * NOTICE: Adobe permits you to use, modify, and distribute this file
+ * in accordance with the terms of the license agreement accompanying it.
+ * ****************************************************************************/
+-->
+  <HEAD>
+    <TITLE>Cross-Domain Tester</TITLE>
+    <LINK REL=StyleSheet HREF="../assets/fonts.css" TYPE="text/css">
+  </HEAD>
+  <BODY>
+    <H3>Cross-Domain Tester</H3>
+    <P>The cross-domain tester allows you to test whether your cross-domain policy file will allow loading from a specific
+    domain. Enter the domain that you want to attempt to load data from in the text box at the top of the page and click
+    <I>Re-Map</I>. This will load the Cross-Domain Tester in the security context of that domain. Then, provide the relevant
+    information for the load operation in the fields below and click <I>Submit Request</I> to determine if the cross-domain
+    policy on the target site will allow the data to load.
+    </P>
+    <B>Important Note</B><BR/>
+    <P>
+    Cross-domain policy files are cached by Flash Player. If you want to test a new version of the cross-domain policy file,
+    then click <I>Re-Map</I> at the top of the window to reload the SWF and clear the cache.
+    </P>
+    <B>URL</B><BR/>
+    <P>
+    This is the URL for the data that you want to load. It should be the site that hosts the cross-domain policy file.
+    </P>
+    <B>METHOD</B><BR/>
+    <P>
+    This is the HTTP request method for this request ("GET","POST", etc.).
+    </P>
+    <B>POST BODY</B><BR/>
+    <P>
+    If this request is a POST, then you would provide the data that you would send with the post request.
+    </P>
+    <B>HTTP Header Checkbox</B><BR/>
+    <P>
+    If this request will send custom HTTP headers, then enable this check box. Custom HTTP headers typically have to be
+    allowed by the cross-domain policy file.
+    </P>
+    <B>HTTP Header</B><BR/>
+    <P>
+    Within these two text boxes, you would provide the header information. The first text box is the header name. The
+    second text box is the header value.
+    </P>
+    <B>Policy File</B><BR/>
+    <P>
+    If you need to load a cross-domain policy file from a sub-directory, then use this text box to provide the URL of the
+    child cross-domain policy file. Policy files in sub-directories must be supported within the master cross-domain policy
+    file.
+    </P>
+    <B>Submit Request</B><BR/>
+    <P>
+    Once all of the information is filled out for this cross-domain request, pressing this button will submit the request to
+    the remote server. The response will display in the <I>Output</I> text box to the right.
+    </P>
+    <B>Output</B><BR/>
+    <P>
+    The result from the cross-domain request will display in this text box. You can also confirm that the domain that you have
+    chosen at the top of the page has taken effect. When the SWF first loads, it will display its current domain security
+    context within this text field.
+    </P>
+  </BODY>
+</HTML>

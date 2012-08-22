@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <s:Window xmlns:fx="http://ns.adobe.com/mxml/2009"
 		   xmlns:s="library://ns.adobe.com/flex/spark"
-		   width="284" height="472" windowComplete="initPanel()" showStatusBar="false" title="About">
+		   width="326" height="584" windowComplete="initPanel()" showStatusBar="false" title="About">
 	<fx:Script>
 		<![CDATA[
 			/****************************************************************************
@@ -40,7 +40,12 @@
 					hText += "<B>Install Type:</B> AIR install<BR/>";
 				}
 				hText += "<B>Author:</B> Peleus Uhley, Adobe Systems, Inc.<BR/>";
-				hText += "<B>License:</B> MPL 1.1<BR/>";
+				//hText += "<BR/>";
+				hText += "<B>Project home page:</B> hosted on <a href='http://labs.adobe.com/technologies/swfinvestigator/'>Adobe Labs</a><BR/>";
+				hText += "<BR/>";
+				hText += "Source code released under MPL 1.1 through Open@Adobe on <a href='http://sourceforge.net/adobe/swfinvestigator/wiki/Home/'>Sourcefourge</a><BR/>";
+				hText += "<BR/>";
+				hText += "Provide feedback on Adobe SWF Investigator on the <a href='http://forums.adobe.com/community/labs/swfinvestigator/'>forums</a><BR/>";
 				hText += "<BR/>";
 				hText += "<I>Encoder/Decoder</I> based on the Adobe Labs Alchemy port of the <a href='http://labs.adobe.com/wiki/index.php/Alchemy:Libraries' target='_blank'>OpenSSL library</a><BR/>";
 				hText += "<BR/>";
@@ -53,13 +58,15 @@
 				hText += "<I>AS3 Compilation</I> functionality is based on code from the Mozilla Tamarin project and the <a href='http://code.google.com/p/as3eval/' target='_blank'>EvalES4UI</a> Google code project.<BR/>";
 				hText += "<BR/>";
 				hText += "<I>Native Install Updater</I> functionality is based on the <a href='http://code.google.com/p/nativeapplicationupdater/' target='_blank'>NativeApplicationUpdater</a> project by Piotr Walczyszyn.<BR/>";
+				hText += "<BR/>";
+				hText += "<I>Cross-Domain Tester</I> functionality is based on code provided by Jason Calvert.<BR/>";
 			
 				this.panelDisplay.textFlow = TextConverter.importToFlow(hText,TextConverter.TEXT_FIELD_HTML_FORMAT);
 			}
 			
 		]]>
 	</fx:Script>
-	<s:Panel width="270" height="450" title="Adobe SWF Investigator" horizontalCenter="0" verticalCenter="0">
-		<s:TextArea id="panelDisplay" x="5" y="10" width="258" height="400" editable="false" />
+	<s:Panel width="294" height="564" title="Adobe SWF Investigator" horizontalCenter="0" verticalCenter="0">
+		<s:TextArea id="panelDisplay" x="5" y="10" width="278" height="512" editable="false" />
 	</s:Panel>
 </s:Window>

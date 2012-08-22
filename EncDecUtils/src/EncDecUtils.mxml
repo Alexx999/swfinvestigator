@@ -20,8 +20,8 @@
 		import mx.utils.Base64Decoder;
 		import mx.utils.Base64Encoder;
 		
-		private var aes128key:ByteArray = null;
-		private var aes128iv:ByteArray = null;
+		//private var aes128key:ByteArray = null;
+		//private var aes128iv:ByteArray = null;
 		private var fm:FocusManager;
 		
 		//I could possibly replace this with toString(16)
@@ -42,16 +42,20 @@
 		{
 			var output:ByteArray = new ByteArray;
 			const hex:Object = {'0':0,'1':1,'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'a':10,'b':11,'c':12,'d':13,'e':14,'f':15,'A':10,'B':11,'C':12,'D':13,'E':14,'F':15};
-			const length:int = input.length;
+			var tmp:Array;
+			if (input.indexOf(",") > 0) {	
+				tmp = input.split(/[\,]+/);
+			} else {
+				tmp = input.match(/.{2}|.+/g);
+			}
 			var i:int = 0;
-			while(i < length) {
-				var byte:uint = (hex[input.charAt(i)] << 4);
-				i++;
-				if(i < length) {
-					byte += hex[input.charAt(i)];
-					i++;
+			while(i < tmp.length) {
+				var byte:uint = (hex[tmp[i].charAt(0)] << 4);
+				if(tmp[i].length == 2) {
+					byte += hex[tmp[i].charAt(1)];
 				}
-				output.writeByte(byte); 
+				output.writeByte(byte);
+				i++;
 			}
 			return output;
 		}

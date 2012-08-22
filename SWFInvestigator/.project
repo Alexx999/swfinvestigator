@@ -3,6 +3,7 @@
 	<name>SWFInvestigator</name>
 	<comment></comment>
 	<projects>
+		<project>CrossDomainTester</project>
 		<project>dumpLSO</project>
 		<project>EncDecUtils</project>
 		<project>getAS3Vars</project>

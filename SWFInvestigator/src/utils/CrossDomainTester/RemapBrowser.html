@@ -1,0 +1,55 @@
+<HTML>
+<!-- 
+ /****************************************************************************
+ * ADOBE SYSTEMS INCORPORATED
+ * Copyright 2012 Adobe Systems Incorporated and it’s licensors
+ * All Rights Reserved.
+ *  
+ * NOTICE: Adobe permits you to use, modify, and distribute this file
+ * in accordance with the terms of the license agreement accompanying it.
+ * ****************************************************************************/
+-->
+ <HEAD>
+  <TITLE>Cross-Domain Tester</TITLE>
+ </HEAD>
+ <BODY>
+  <DIV>
+     <TABLE WIDTH="100%">
+      <TR>
+        <TD style="width:380px">Enter the domain that the SWF will test from:</TD>
+        <TD>
+        	<INPUT TYPE="TEXT" NAME="domain" ID="domain" VALUE="http://www.example.com:81/" style="width:100%"/>
+        </TD>
+       	<TD style="width:100px">
+       		<INPUT TYPE="hidden" NAME="src" ID="src" VALUE="xDomainTester.html"/
+            <INPUT TYPE="hidden" NAME="filePath" ID="filePath" VALUE="app:/utils/CrossDomainTester/"/>
+       		<INPUT TYPE="submit" VALUE="Re-Map" onclick="rewriteDiv()">
+        </TD>
+      </TR>
+    </TABLE>
+  </DIV>
+  <DIV ID="LCmapper">
+  </DIV>
+  <SCRIPT TYPE="text/javascript">
+  <!--
+     
+     function writeLCEnumMap(domain,path,src) {
+ 		var div = document.getElementById("LCmapper");
+ 		var frameString = '<iframe id="LCEnum" height="515" width="1050" scrolling="no" src="' + src + '" documentRoot="' + path + '" sandboxRoot="' + domain + '"/>';
+		div.innerHTML = frameString;
+ 	  }
+ 	  
+ 	  function rewriteDiv() {
+ 	    var domain = document.getElementById("domain").value;
+ 	    var filepath = document.getElementById("filePath").value;
+ 	    var src = document.getElementById("src").value;
+ 	    writeLCEnumMap(domain,filepath,src);
+ 	    return (false);
+      }
+
+	  writeLCEnumMap("","","app:/utils/CrossDomainTester/xDomainTester.html");
+     
+  //-->
+  </SCRIPT>
+ </BODY>
+</HTML>

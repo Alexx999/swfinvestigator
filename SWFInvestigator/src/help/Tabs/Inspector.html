@@ -39,9 +39,11 @@
     variable, then you would enter "foo.html" into the text box.  If you were to call a function, then you would still use the dotted notation.  For instance,
     "foo.html.toString".</P>
     <b>Function Parameters/New Value</b><br/>
-    <P>In this box, you enter the new value or parameters for the function. If you are only assigning a single variable to the variable, then you would enter
+    <P>In this box, you enter the new value or parameters for the function. If you are only assigning a single variable to the parameter list, then you would enter
     the value for the variable into the text field below the data grid.  Select the data type from the pull down menu just below that and then click "Add Parameter."
-    If you plan to call a function, then you can enter multiple parameters by repeating to enter in values, selecting the type and clicking "Add Parameter."</p>
+    For a variable of type "array", SWF Investigator currently only supports an array of strings. Enter the strings in a comma-delimited format and SWF Investigator will
+    perform a String.split() to create the array. If you plan to call a function that takes multiple parameters, then you can repeat the process to enter in the values
+    by providing the value, selecting the type and clicking "Add Parameter."</p>
     <p>To change the value of a variable already within the table, click the "Value" cell for the piece of data and enter in the new value.  It will be updated when you
     de-select the cell.</p>
     <p>To delete data from the table, click the "Value" cell for the item that is to be removed and delete the value from the cell.  This will cause the row to be deleted

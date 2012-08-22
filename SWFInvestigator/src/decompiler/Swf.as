@@ -84,6 +84,7 @@ package decompiler
 		public var frameCount:uint;
 		public var version:uint;
 		public var compressed:Boolean;
+		public var compressionType:String = "None";
 		public var length:uint;
 		
 		//File Attributes
@@ -124,8 +125,16 @@ package decompiler
 			this.dict = new SWFDictionary();
 			
 			var header:String = data.readUTFBytes(3);
+			this.compressionType = "None";
 			if (header == "CWS") {
 				this.compressed = true;
+				this.compressionType = "ZLIB";
+			} else if (header == "ZWS") {
+				this.compressionType = "LZMA";
+				this.compressed = true;
+				throw new SWFFormatError("LZMA will be supported in the next release.");
+			} else if (header != "FWS") {
+				throw new SWFFormatError("Incorrect SWF header");
 			}
 			
 			this.version = data.readUnsignedByte();
@@ -136,9 +145,17 @@ package decompiler
 				udata.endian = "littleEndian";
 				//data.position = 8;
 				data.readBytes(udata,0,data.length-data.position);
-				var csize:int = udata.length;
-				udata.uncompress();
-				this.log.print("decompressed swf "+csize+" -> "+udata.length + "\r");
+				var csize:uint;
+				
+				if (this.compressionType == "ZLIB") {
+					csize = udata.length;
+					udata.uncompress();
+					this.log.print("decompressed swf " + csize + " -> " + udata.length + "\r");
+				} else if ( this.compressionType == "LZMA") {
+					csize = udata.readUnsignedInt();
+					//TO DO
+					this.log.print("decompressed swf " + csize + " -> "+ udata.length + "\r");
+				}
 				udata.position = 0;
 				this.data.clear();
 				this.data.writeUTFBytes("FWS");

@@ -84,6 +84,7 @@
 				<menuitem label="AS3 Compiler" data="as3Compiler"/>
 				<menuitem label="XSS Fuzzer" data="xssFuzzer"/>
 				<menuitem label="Remap Browser" data="RemapBrowser"/>
+				<menuitem label="Cross-domain Tester" data="xDomainTester"/>
 				<menuitem label="Mini Web Server" data="miniWebServer"/>
 			</menuitem>
         	<menuitem label="Help">
@@ -108,39 +109,39 @@
 		<s:NavigatorContent label="SWF Info" width="95%" height="95%" tabIndex="0" show="initMainBox()">
 			<s:Group id="swfInfo" width="100%">				
 				<s:Label x="10" y="31" text="Filename:"/>
-				<s:Label x="98" y="28" width="640" id="filenameBox" enabled="true"/>
+				<s:Label id="filenameBox" x="98" y="31" width="640" enabled="true" fontWeight="bold"/>
 				<s:Label x="10" y="63" text="Version:"/>
-				<s:Label x="98" y="63" width="65" enabled="true" id="versionBox"/>
-				<s:Label x="10" y="90" text="Compressed:"/>
-				<s:Label x="99" y="89" width="65" id="compressedBox"/>
+				<s:Label x="98" y="63" width="65" enabled="true" id="versionBox" fontWeight="bold"/>
+				<s:Label x="10" y="89" text="Compression:"/>
+				<s:Label x="99" y="89" width="65" id="compressedBox" fontWeight="bold"/>
 				<s:Label x="10" y="115" text="Size:" enabled="true" width="81"/>
-				<s:Label x="99" y="115" width="65" id="sizeBox"/>
-				<s:Label x="10" y="142" text="Movie Rect:"/>
-				<s:Label x="99" y="142" width="248" id="movieRect" enabled="true"/>
-				<s:Label x="192" y="64" text="AVM2:" enabled="true" width="42"/>
-				<s:Label x="282" y="63" id="avm2Box" enabled="true" width="65"/>
+				<s:Label x="99" y="115" width="65" id="sizeBox" fontWeight="bold"/>
+				<s:Label x="10" y="141" text="Movie Rect:"/>
+				<s:Label x="99" y="141" width="248" id="movieRect" enabled="true" fontWeight="bold"/>
+				<s:Label x="192" y="63" text="AVM2:" enabled="true" width="42"/>
+				<s:Label x="282" y="63" id="avm2Box" enabled="true" width="65" fontWeight="bold"/>
 				<s:Label x="192" y="89" text="Has Actions:"/>
-				<s:Label x="282" y="89" width="65" id="hasActionsBox" enabled="true"/>	
+				<s:Label x="282" y="89" width="65" id="hasActionsBox" enabled="true" fontWeight="bold"/>	
 				<s:Label x="192" y="115" text="Has Metadata"/>
-				<s:Label id="hasMetadata" x="282" y="115" width="65"/>
-				<s:Label x="377" y="90" text="Frame Rate:"/>
-				<s:Label x="467" y="91" width="65" id="frameRateBox" height="18"/>
-				<s:Label x="377" y="64" text="Frame Count:"/>
-				<s:Label x="467" y="64" width="65" id="frameCountBox"/>
-				<s:Label x="377" y="116" text="useGPU:"/>
-				<s:Label id="useGPU" x="467" y="116" width="65"/>
+				<s:Label id="hasMetadata" x="282" y="115" width="65" fontWeight="bold"/>
+				<s:Label x="377" y="89" text="Frame Rate:"/>
+				<s:Label x="467" y="89" width="65" id="frameRateBox" height="18" fontWeight="bold"/>
+				<s:Label x="377" y="63" text="Frame Count:"/>
+				<s:Label x="467" y="63" width="65" id="frameCountBox" fontWeight="bold"/>
+				<s:Label x="377" y="115" text="useGPU:"/>
+				<s:Label id="useGPU" x="467" y="115" width="65" fontWeight="bold"/>
 				<s:Label x="377" y="141" text="useDirectBlit:"/>
-				<s:Label id="useDirectBlit" x="467" y="141" width="66"/>
-				<s:Label x="545" y="64" text="Local w/ Networking:"/>
-				<s:Label id="useNetwork" x="685" y="64" width="53"/>
-				<s:Label x="545" y="90" text="Use Relative URLs:"/>
-				<s:Label id="swfRelativeURLs" x="685" y="90" width="53"/>
+				<s:Label id="useDirectBlit" x="467" y="141" width="66" fontWeight="bold"/>
+				<s:Label x="545" y="63" text="Local w/ Networking:"/>
+				<s:Label id="useNetwork" x="685" y="63" width="53" fontWeight="bold"/>
+				<s:Label x="545" y="89" text="Use Relative URLs:"/>
+				<s:Label id="swfRelativeURLs" x="685" y="89" width="53" fontWeight="bold"/>
 				<s:Label x="545" y="116" width="132" height="46" text="Suppress crossdomain caching:"/>
-				<s:Label id="xdomainCache" x="685" y="120" width="52"/>
+				<s:Label id="xdomainCache" x="685" y="120" width="52" fontWeight="bold"/>
 				<s:Label x="119" y="215" text="Exported Classes" width="112"/>
-				<s:TextArea x="10" y="239" width="337" height="330" id="exportClasses"/>
+				<s:TextArea x="10" y="239" width="337" height="330" id="exportClasses" fontWeight="bold"/>
 				<s:Label x="545" y="217" text="File Tags" width="60"/>
-				<s:TextArea x="402" y="239" width="337" height="330" id="fileTags"/>
+				<s:TextArea x="402" y="239" width="337" height="330" id="fileTags" fontWeight="bold"/>
 			</s:Group>
 		</s:NavigatorContent>
 		<tabs:TagPanel id="tPanel" label="Tag Viewer" tabIndex="2" height="586"/>
@@ -391,6 +392,8 @@
 					uWindow.createNewRootWindow("miniWebServer",null);
 				} else if (evt.item.@data.indexOf("AMFFuzz") == 0) {
 					uWindow.createNewRootWindow("AMFFuzz",null);
+				} else if (evt.item.@data.indexOf("xDomainTester") == 0) {
+					uWindow.createNewRootWindow("xDomainTester",null);
 		    	} else if (evt.item.@data.indexOf("UpdateCheck") == 0) {
 		    		this.iManager.checkForUpdates(true);
 		    	} 
@@ -470,6 +473,12 @@
 				this.swfUrl = url;
 				this.pDB.updateFileHistory(this.fileName,"file",this.swfUrl);
 				this.updateMenuBar();
+				
+				//Enable Save boxes
+				this.menuXML[0].menuitem[6].@enabled = true;
+				this.menuXML[0].menuitem[7].@enabled = true;
+				this.menuXML[0].menuitem[8].@enabled = true;
+				
 				initializeAnalyzer(data);	
 			}
 			
@@ -751,7 +760,7 @@
 		    	
 		    	this.versionBox.text = this.currentASD.swfData.version;
 		    	this.avm2Box.text = this.currentASD.swfData.avm2;
-		    	this.compressedBox.text = this.currentASD.swfData.compressed;
+		    	this.compressedBox.text = this.currentASD.swfData.compressionType;
 		    	this.sizeBox.text = this.currentASD.swfData.size;
 		    	this.hasActionsBox.text = this.currentASD.swfData.hasActions;
 		    	this.movieRect.text = this.currentASD.swfData.movieRect;

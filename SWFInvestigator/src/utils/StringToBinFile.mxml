@@ -107,7 +107,7 @@
 			 * Compress all the data in the byte array and re-display
 			 */
 			private function compressData():void {
-				this.swfBytes.compress();
+				this.HV.swfBytes.compress();
 				this.HV.initViewer(this.swfBytes);
 				HV.updateHexArray();
 			}
@@ -118,7 +118,7 @@
 			 */
 			private function uncompressData():void {
 				try {
-					this.swfBytes.uncompress();
+					this.HV.swfBytes.uncompress();
 					this.HV.initViewer(this.swfBytes);
 					HV.updateHexArray();
 				} catch (e:Error) {
@@ -129,6 +129,7 @@
 			/**
 			 * @private
 			 * XOR all the data in the byte array and re-display
+			 * Accepts hex or integer values.
 			 */
 			private function xorData():void {
 				var x_val:int;
@@ -139,10 +140,10 @@
 					x_val = parseInt(this.xorValue.text);
 				}
 				
-				for (var i:int = 0; i < this.swfBytes.length; i++) {
-					this.swfBytes[i] = this.swfBytes[i] ^ x_val;
+				for (var i:int = 0; i < this.HV.swfBytes.length; i++) {
+					this.HV.swfBytes[i] = this.HV.swfBytes[i] ^ x_val;
 				}
-				this.HV.initViewer(this.swfBytes);
+				this.HV.initViewer(this.HV.swfBytes);
 				HV.updateHexArray();
 			}
 			
@@ -262,26 +263,26 @@
 			 */
 			private function switchEndian():void {
 				var i:int = 0;
-				if (this.swfBytes.length % 4 != 0) {
-					this.swfBytes.position = this.swfBytes.length -1;
-					while (i < this.swfBytes.length % 4) {
-						this.swfBytes.writeByte(0);
+				if (this.HV.swfBytes.length % 4 != 0) {
+					this.HV.swfBytes.position = this.HV.swfBytes.length -1;
+					while (i < this.HV.swfBytes.length % 4) {
+						this.HV.swfBytes.writeByte(0);
 						i++
 					}
-					this.swfBytes.position = 0;
+					this.HV.swfBytes.position = 0;
 				}
 				
-				for (i = 0; i < this.swfBytes.length; i += 4) {
+				for (i = 0; i < this.HV.swfBytes.length; i += 4) {
 					var tmp:uint;
-					tmp = this.swfBytes[i];
-					this.swfBytes[i] = this.swfBytes[i + 3];
-					this.swfBytes[i + 3] = tmp;
-					tmp = this.swfBytes[i+2];
-					this.swfBytes[i+2] = this.swfBytes[i+1];
-					this.swfBytes[i+1] = tmp;
+					tmp = this.HV.swfBytes[i];
+					this.HV.swfBytes[i] = this.HV.swfBytes[i + 3];
+					this.HV.swfBytes[i + 3] = tmp;
+					tmp = this.HV.swfBytes[i+2];
+					this.HV.swfBytes[i+2] = this.HV.swfBytes[i+1];
+					this.HV.swfBytes[i+1] = tmp;
 				}
 				
-				this.HV.initViewer(this.swfBytes);
+				this.HV.initViewer(this.HV.swfBytes);
 				HV.updateHexArray();
 			}
 			
@@ -334,10 +335,10 @@
 	<s:Button x="599.2" y="123.6" label="Convert Integers to Hex" click="convertToHex()"/>
 	<mx:HRule x="20" y="162" width="723" height="4"/>
 	<s:Button x="12" y="188" label="Load a File" click="loadFile()"/>
-	<s:TextInput x="374" y="189" width="180" id="hexSearchText" enabled="true" click="this.searchHexButton.label='Find';this.hvWrapText.text='';"/>
+	<s:TextInput x="374" y="189" width="180" id="hexSearchText" enabled="true" click="this.searchHexButton.label='Find';this.hvWrapText.text='';this.errorBox.text='';"/>
 	<s:DropDownList x="563.9" y="189.75" id="hvSearchCB" dataProvider="{ this.hvSearchType }" width="96" selectedIndex="0"/>
 	<s:Button x="667" y="189.25" label="Find" id="searchHexButton" click="findHexString()"/>
-	<s:Label x="10" y="58" id="hvWrapText" text="" width="184" height="18"/>
+	<s:Label x="182" y="191" id="hvWrapText" text="" width="184" height="18"/>
 	<s:DataGrid selectionMode="multipleCells" id="hvDataGrid" x="10" y="220.9" width="728" height="384"
 				dataProvider="{ this.HV.initDG }" enabled="true" sortableColumns="false" editable="true"
 				initialize="initializeDG()" gridItemEditorSessionSave="updateString(event)">
@@ -370,7 +371,7 @@
 	<s:Button x="667.95" y="617" label="Save" id="hvSave" click="this.HV.saveToFile()" />
 	<s:Button x="140" y="617" label="Compress" width="99" click="compressData()"/>
 	<s:Button x="246" y="617" label="Uncompress" width="98" click="uncompressData()"/>
-	<s:TextInput x="448" y="617" id="xorValue" width="90"/>
+	<s:TextInput x="448" y="617" id="xorValue" width="90" toolTip="Hex values should be provided as 0x00. Integers as text are also allowed."/>
 	<s:Button x="543" y="617" label="XOR" click="xorData()" width="46"/>
 	<s:Label x="380" y="622" text="XOR Value:"/>
 </s:Window>

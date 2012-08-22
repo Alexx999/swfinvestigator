@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   width="1044" height="507" creationComplete="mainFunction()">
+	<fx:Script>
+		<![CDATA[
+			import mx.controls.Alert;
+			
+			private function mainFunction():void
+			{
+				this.req.addEventListener(MouseEvent.CLICK, reqFunc);
+				var LC:LocalConnection = new LocalConnection();
+				this.output.text = "This SWF's current domain is: " + LC.domain;
+			}
+			
+			private function isURL(str:String):Boolean
+			{
+				var regex:RegExp = /^http(s)?:\/\/((\d+\.\d+\.\d+\.\d+)|(([\w-]+\.)+([a-z,A-Z][\w-]*)))(:[1-9][0-9]*)?(\/([\w-.\/:%+@&=]+[\w- .\/?:%+@&=]*)?)?(#(.*))?$/i;
+				if (regex.test(str))
+					return true;
+				else
+					return false;
+			}
+			
+			private function reqFunc(e:MouseEvent):void
+			{
+				var request:URLRequest = new URLRequest(targ.text);
+				var urlVar:URLVariables = new URLVariables();
+				var loader:URLLoader = new URLLoader();
+				loader.addEventListener(HTTPStatusEvent.HTTP_STATUS, handleStatus);
+				loader.addEventListener(Event.COMPLETE, onComplete);
+				loader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, handleSecurityError );
+				loader.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+				
+				if (isURL(this.targ.text))
+				{
+					if (this.cdom.enabled == true)
+					{
+						if (isURL(this.cdom.text))
+						{
+							try {
+								Security.loadPolicyFile(this.cdom.text);
+							} catch (err:Error) {
+								Alert.show("XML");
+								output.text = "Invalid Crossdomain.xml specified - "+err.message;
+							}
+						}                             
+						else
+							Alert.show("Please input a valid URL for CrossDomain.xml", 'Invalid Crossdomain.xml');
+					}
+					
+					if(post.selected)
+					{
+						request.method=URLRequestMethod.POST;
+						if(postBody.text == "")
+							request.data = "WhiteHat=Security";
+						else
+							request.data = postBody.text;
+						
+						if(this.head.selected)
+							request.requestHeaders.push(new URLRequestHeader(this.header.text, this.headBody.text));                   
+					}    
+					
+					try {
+						loader.load(request);
+					} catch (err:Error) {
+						if(err.errorID == 2096)
+							output.text = "(#2096) The HTTP Header provided is not allowed by the Flash security model";
+						else
+							output.text = "ERROR! ~ Want to play a game?"
+					}
+				}
+				else
+					Alert.show("Please input valid URL", 'Target');
+				
+				function handleSecurityError(event:SecurityErrorEvent):void
+				{
+					if(event.text == "Error #2048")
+						output.text = "(#2048) - The current policy file prevents flash from making this request";
+					else if(event.text == "Error #2170")
+						output.text = '(#2170) - The policy file on the target server does not currently allow custom HTTP Headers.\nTry adding <allow-http-request-headers-from domain="*"> to the policy file.';
+					else
+						output.text = String(event);
+					//Alert.show("Security Error");
+				}
+				
+				function handleStatus(event:HTTPStatusEvent):void
+				{                  
+					if(event.status == 404)
+						output.text = "404 - Page Not Found";
+					else
+						output.text = "Something other than a 200 OK was recieved from the server.";
+				}
+				
+				function onIOError(event:IOErrorEvent):void
+				{
+					//Alert.show("IO ERROR");
+					//output.text += String(event);
+				}
+				
+				function onComplete(event:Event):void
+				{
+					var loader:URLLoader = URLLoader(event.target);
+					output.text = loader.data;
+				}
+			}
+		]]>
+	</fx:Script>
+	
+	<s:Panel width="1046" height="507" color="#2554C7" fontWeight="bold" title="Cross-domain Policy Analyzer">
+		<s:HGroup width="1034">
+		<s:VGroup width="647" height="608">
+			<mx:Form width="640" color="#000000">
+				<mx:FormHeading/>
+				
+				<mx:FormItem label="URL: ">
+					<s:TextInput id="targ" width="500" text="http://www.example.com/Authenticated_Content.html" fontWeight="normal"
+								 toolTip="Enter the URL of the content that you want to load."/>
+				</mx:FormItem>
+				
+				<mx:FormItem label="Method: " fontWeight="bold">
+					<s:HGroup><s:RadioButton label="GET" groupName="method" id="get" selected="true" fontWeight="normal"/><s:RadioButton label="POST" groupName="method" id="post" fontWeight="normal"/></s:HGroup>
+				</mx:FormItem>
+				
+				<mx:FormItem label="Post Body" fontWeight="bold" enabled="{post.selected}" toolTip="Enter the variables to be sent with the POST as a string">
+					<s:TextArea id="postBody" fontWeight="normal" width="500"/>
+				</mx:FormItem>    
+				
+				<mx:FormItem enabled="{post.selected}">
+					<s:CheckBox label="HTTP Header (Must Be Allowed Via Policy File)" id="head" fontWeight="normal"/>
+				</mx:FormItem>
+				
+				<mx:FormItem label="HTTP Header: " fontWeight="bold" enabled="{head.selected}">
+					<s:HGroup verticalAlign="middle"><s:TextInput fontWeight="normal" text="X-Header" id="header" width="100" toolTip="Enter the header name"/><s:Label text=":" fontWeight="bold"/><s:TextInput text="test=data;" id="headBody" width="385" fontWeight="normal" toolTip="Enter the header value"/></s:HGroup>
+				</mx:FormItem>
+				
+				<mx:FormItem label="Policy Location: " fontWeight="bold">
+					<s:CheckBox label="Sub-Directory Policy File (If Allowed By Root Policy)" id="policy" fontWeight="normal"/>
+				</mx:FormItem>
+				
+				<mx:FormItem label="Policy File: " fontWeight="bold" enabled="{policy.selected}">
+					<s:TextInput width="500" id="cdom" fontWeight="normal" enabled="{policy.selected}" toolTip="Enter the URL of the cross-domain policy file"/>
+				</mx:FormItem>
+				
+				<mx:FormItem>
+					<mx:HRule width="500" height="1"/>
+					<s:Button label="Submit Request" id="req"/>
+				</mx:FormItem>
+			</mx:Form>
+			<s:HGroup horizontalAlign="center" width="100%" >
+				<s:Label width="560" height="50">
+					<s:text>
+						<![CDATA[
+Note: Cross-domain policy files are cached.					
+If you update the policy file, then click Re-Map to reload the SWF and clear the cache.
+]]>
+					</s:text>
+				</s:Label>
+			</s:HGroup>
+		</s:VGroup>
+		<s:VGroup width="376" height="604">
+			<s:Label text="Output:"/>
+			<s:TextArea id="output" x="484" y="23" width="374" height="447"/>
+		</s:VGroup>
+		</s:HGroup>
+	</s:Panel>
+	
+</s:Application>

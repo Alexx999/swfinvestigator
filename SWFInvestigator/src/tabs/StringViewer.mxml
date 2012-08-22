@@ -20,6 +20,8 @@
 			 * Strings Tab		*
 			 ********************/
 			
+			import mx.collections.ArrayList;
+			
 			import osUtils.FileActionEvent;
 			import osUtils.FileActions;
 			
@@ -63,7 +65,7 @@
 						arr[i] = arr[i] + " ";
 					}
 					
-					stringsList.dataProvider = arr;
+					stringsList.dataProvider = new ArrayList(arr);
 				}
 			}
 			
@@ -76,7 +78,26 @@
 					return;
 				}
 				this.searchButton.label="Find Next";
-				stringsList.findString(searchText.text);
+				this.errorOutput.text = "";
+				
+				var start:uint = 0;
+				if (this.stringsList.selectedIndex > 0) {
+					start = this.stringsList.selectedIndex;
+				}
+				var temp:Array = this.stringsList.dataProvider.toArray();
+				var selected:int = temp.indexOf(searchText.text + " ", start);
+				if (selected >= 0) {
+					this.stringsList.selectedIndex = selected;
+					if (selected +3 > temp.length) {
+						selected = temp.length
+					} else {
+						selected = selected +3;
+					}
+					this.stringsList.ensureIndexIsVisible(selected);
+				} else {
+					this.errorOutput.text = "String was not found!";
+				}
+				//stringsList.findString(searchText.text);
 			}
 			
 			/**
@@ -108,7 +129,7 @@
 					foundSecurityStrings.push("No relevant strings found");
 				}
 				
-				securityStringsList.dataProvider = foundSecurityStrings;
+				securityStringsList.dataProvider = new ArrayList(foundSecurityStrings);;
 			}
 			
 			/**
@@ -137,6 +158,16 @@
 				this.fActions.openFile(fFilter,FileActions.READ);
 			}
 			
+			private function stringsList_doubleClickHandler(event:Event):void
+			{
+				var temp:String = this.stringsList.dataProvider.toArray()[this.stringsList.selectedIndex];
+				
+				if (temp != null) {
+					//trim the extra space off the end of the string.
+					Clipboard.generalClipboard.setData(ClipboardFormats.TEXT_FORMAT, temp.substr(0,temp.length -1) );
+				}
+			}
+			
 		]]>
 	</fx:Script>
 	<s:Group percentWidth="90" height="580">
@@ -153,7 +184,7 @@
 			<s:Group width="299" height="409">
 				<mx:HRule x="3" y="4" width="283" height="1"/>
 				<s:Label x="3" y="18" width="138" text="Security relevant strings:"/>
-				<mx:List x="3" y="30" width="283" height="375" id="securityStringsList"/>
+				<s:List x="3" y="30" width="283" height="375" id="securityStringsList"/>
 			</s:Group>
 			<s:HGroup width="268" height="27" verticalAlign="middle">
 				<s:Label x="37" y="539" text="Select a different string dictionary:"/>
@@ -161,8 +192,12 @@
 			</s:HGroup>
 		</s:VGroup>
 		<s:VGroup x="340" y="5" paddingLeft="10" paddingBottom="10" paddingRight="10" paddingTop="10" percentWidth="100">
-			<s:Label x="339" y="14" percentWidth="100" text="All strings:"/>
-			<mx:List x="339" y="32" percentWidth="100" height="527" id="stringsList"/>
+			<s:HGroup>
+				<s:Label x="339" y="14" width="67" percentWidth="100" text="All strings:"/>
+				<s:Label id="errorOutput" width="246" color="#FB0202"/>
+			</s:HGroup>
+			<s:List x="339" y="32" percentWidth="100" height="527" id="stringsList" doubleClickEnabled="true" doubleClick="stringsList_doubleClickHandler(event)"
+				 toolTip="Double-clicking on a string will copy it to the clipboard"/>
 		</s:VGroup>
 	</s:Group>
 </s:NavigatorContent>

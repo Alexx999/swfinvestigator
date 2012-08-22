@@ -49,6 +49,11 @@ package utils
 		private var RemapBrowserLocation:String = "app:/utils/remapBrowser/RemapBrowser.html";
 		private var rBrowserWidth:int = 640;
 		private var rBrowserHeight:int = 640;
+		
+		//Defaults for the Cross-Domain Tester Window
+		private var xDomainTesterLocation:String = "app:/utils/CrossDomainTester/RemapBrowser.html";
+		private var xDomainWidth:int = 1075;
+		private var xDomainHeight:int = 595;
 
 		//Local copy of the preferences DB
 		private var prefsDB:PreferencesDB;
@@ -175,6 +180,7 @@ package utils
 			var newWindow:LSOViewer = new LSOViewer(); 
 			newWindow.open(true);
 		}
+		
 		/**
 		 * @private
 		 * Used to launch the Encoder/Decoder window once the Enc/Dec SWF is loaded.
@@ -226,7 +232,7 @@ package utils
 		
 		/**
 		 * @private
-		 * Used to launch the Remote Browser Window
+		 * Used to launch the Remap Browser Window
 		 */
 		private function loadRBrowser():void {
 			var options:NativeWindowInitOptions = new NativeWindowInitOptions();
@@ -242,6 +248,26 @@ package utils
 			htmlLoader.htmlHost = new HTMLHost();
 			
 			htmlLoader.load(new URLRequest(this.RemapBrowserLocation));
+		}
+		
+		/**
+		 * @private
+		 * Used to launch the Cross-Domain Tester Window
+		 */
+		private function loadXDomainTester():void {
+			var options:NativeWindowInitOptions = new NativeWindowInitOptions();
+			options.systemChrome = NativeWindowSystemChrome.STANDARD;
+			options.type = NativeWindowType.NORMAL;
+			options.transparent = false;
+			options.resizable = true;
+			
+			var rect:Rectangle = new Rectangle(0,0,this.xDomainWidth,this.xDomainHeight);
+			
+			var htmlLoader:HTMLLoader = HTMLLoader.createRootWindow(true,options,true,rect);
+			htmlLoader.userAgent = this.prefsDB.getPref('defaultUserAgent');
+			htmlLoader.htmlHost = new HTMLHost();
+			
+			htmlLoader.load(new URLRequest(this.xDomainTesterLocation));
 		}
 		
 		/**
@@ -288,6 +314,8 @@ package utils
 				this.loadAMFFuzzer();
 			} else if (type == "miniWebServer") {
 				this.loadMiniWebServer();
+			} else if (type == "xDomainTester") {
+				this.loadXDomainTester();
 			}
 		}
 

@@ -72,6 +72,7 @@ package decompiler
 		        this.swfData.frameRate = this.swfFile.frameRate;
 		        this.swfData.frameCount = this.swfFile.frameCount;
 		        this.swfData.movieRect = this.swfFile.rect.toString();
+				this.swfData.compressionType = this.swfFile.compressionType;
 		    	
 		    	this.fileTagsArray = this.swfFile.tags;
 				this.swfInfo = this.logger.outArray[0];
