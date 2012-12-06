@@ -19,6 +19,9 @@ package decompiler
 	
 	import flash.filesystem.FileStream;
 	import flash.utils.ByteArray;
+	import flash.utils.CompressionAlgorithm;
+	import flash.utils.Endian;
+
 	
 	/**
 	 * The ASDecompiler is the class that wraps the swfutils library for decompiling AS2 and AS3 SWFs.
@@ -108,7 +111,7 @@ package decompiler
 					return (e.message);
 				}
 		    	
-		    	if (this.swfFile.avm2 && this.swfFile.abc[0].classes != null && this.swfFile.abc[0].classes.length > 0) {
+		    	if (this.swfFile.avm2 && this.swfFile.abc.length > 0 && this.swfFile.abc[0].classes != null && this.swfFile.abc[0].classes.length > 0) {
 					for (var i:int = 0; i < this.swfFile.abc.length; i++) {
 					  outputString += "ABC Block " + i + " Classes\r";
 					  for (var j:String in this.swfFile.abc[i].classes) {
@@ -284,15 +287,31 @@ package decompiler
 		    	//Get Header info
 		    	var header:ByteArray = new ByteArray();
 		    	bytes.readBytes(header,0,8);
-		    	header[0] = 70; // Reset to non-compressed :-)
+				bytes.endian = Endian.LITTLE_ENDIAN;
 	
 		    	var dataArray:ByteArray = new ByteArray();
-				bytes.readBytes(dataArray);
-				dataArray.position = 0;
-				dataArray.uncompress();
+				dataArray.endian = Endian.LITTLE_ENDIAN;
+				if (header[0] == 67) {
+					bytes.readBytes(dataArray);
+					dataArray.position = 0;
+					dataArray.uncompress();
+				} else {
+					var csize:uint = bytes.readUnsignedInt();
+					bytes.readBytes(dataArray,0,5);
+					dataArray.position = 5;
+					header.position = 4;
+					header.endian = Endian.LITTLE_ENDIAN;
+					var size:uint = header.readUnsignedInt();
+					dataArray.writeUnsignedInt(size-8);
+					dataArray.writeUnsignedInt(0);
+					bytes.readBytes(dataArray,13,csize);
+					dataArray.position = 0;
+					dataArray.uncompress(CompressionAlgorithm.LZMA);
+				}
 				dataArray.position = 0;
 		    	
 		    	//Put together in pretty package
+				header[0] = 70; // Reset to non-compressed :-)
 		    	var tmpArray:ByteArray = new ByteArray();
 		    	tmpArray.writeBytes(header);
 		    	tmpArray.writeBytes(dataArray);

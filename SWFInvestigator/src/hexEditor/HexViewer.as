@@ -11,6 +11,7 @@ package hexEditor
 {
 	import flash.net.FileReference;
 	import flash.utils.ByteArray;
+	import flash.utils.CompressionAlgorithm;
 	import flash.utils.Endian;
 	
 	import mx.collections.ArrayCollection;
@@ -133,7 +134,7 @@ package hexEditor
 		 * This function converts the current strings in the DataGrid to a byteArray, compresses it
 		 * and then launches file.save to prompt the user.
 		 */
-		public function saveCompressed():void {
+		public function saveCompressed(compressionType:String = CompressionAlgorithm.ZLIB):void {
 			var fileArray:ByteArray = new ByteArray;
 			var file:FileReference = new FileReference();
 			var colName:String;
@@ -150,16 +151,43 @@ package hexEditor
 			var header:ByteArray = new ByteArray;
 			fileArray.position = 0;
 		    fileArray.readBytes(header,0,8);
-		    header[0] = 67; // Reset to compressed :-)
-		    
-		    var compressedStuff:ByteArray = new ByteArray;
-		    fileArray.readBytes(compressedStuff,0,0);
-		    compressedStuff.position = 0;
-		    compressedStuff.compress();
-		    
-		    var tmpArray:ByteArray = new ByteArray;
-		    tmpArray.writeBytes(header);
-		    tmpArray.writeBytes(compressedStuff);
+			
+			var compressedStuff:ByteArray = new ByteArray;
+			compressedStuff.endian = Endian.LITTLE_ENDIAN;
+			fileArray.readBytes(compressedStuff,0,0);
+			compressedStuff.position = 0;
+			
+			var tmpArray:ByteArray = new ByteArray;
+			tmpArray.endian = Endian.LITTLE_ENDIAN;
+			
+			if (compressionType == CompressionAlgorithm.ZLIB) {
+				header[0] = 67; // Reset to compressed :-)
+				compressedStuff.compress();
+				tmpArray.writeBytes(header);
+				tmpArray.writeBytes(compressedStuff);
+			} else {
+				//LZMA Compress
+				compressedStuff.compress(CompressionAlgorithm.LZMA);
+				var csize:uint = compressedStuff.length;
+				
+				//Reset header to ZWS
+				header[0] = 90;
+
+				//Read header into tmpArray
+				tmpArray.writeBytes(header);
+				
+				//Write csize into the header
+				//Subtract for LZMA props (5 bytes) and compressed length (8 bytes)
+				tmpArray.writeUnsignedInt(csize - 13);
+				
+				//Read in LZMA props
+				compressedStuff.position = 0;
+				compressedStuff.readBytes(tmpArray,12,5);
+
+				//Read in compressed info skipping the 8 byte compressed size
+				compressedStuff.position = 13;
+				compressedStuff.readBytes(tmpArray,17,csize - 13);
+			}
 			
 			file.save(tmpArray,"compressed_foo.swf");
 		}

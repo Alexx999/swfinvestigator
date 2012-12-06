@@ -24,6 +24,8 @@
 			import spark.components.gridClasses.CellPosition;
 			import spark.events.DropDownEvent;
 			
+			import flash.utils.CompressionAlgorithm;
+			
 			include '../hexEditor/gridEventHandlers.as';
 			
 			
@@ -73,7 +75,8 @@
 		    	} else if (this.hvViewCB != null) {
 		    		this.hvViewCB.selectedIndex = 0;
 		    		this.hvViewCB.enabled = true;
-		    		this.hvSaveCompressed.enabled = false;
+		    		this.hvSaveZLIBCompressed.enabled = false;
+					this.hvSaveLZMACompressed.enabled = false;
 		    		this.hvFileTagButton.enabled = false;
 		    		this.hvFileTagList.enabled = false;
 		    	}
@@ -115,13 +118,15 @@
 				if (parentApplication.currentASD != null && parentApplication.swfBytes[0] == 70 && this.hvViewCB != null) {
 					this.hvViewCB.selectedIndex = 1;
 					this.hvViewCB.enabled = false;
-					this.hvSaveCompressed.enabled = true;
+					this.hvSaveZLIBCompressed.enabled = true;
+					this.hvSaveLZMACompressed.enabled = true;
 					this.hvFileTagButton.enabled = true;
 					this.hvFileTagList.enabled = true;
 				} else if (this.hvViewCB != null) {
 					this.hvViewCB.selectedIndex = 0;
 					this.hvViewCB.enabled = true;
-					this.hvSaveCompressed.enabled = false;
+					this.hvSaveZLIBCompressed.enabled = false;
+					this.hvSaveLZMACompressed.enabled = false;
 					this.hvFileTagButton.enabled = false;
 					this.hvFileTagList.enabled = false;
 				}
@@ -198,18 +203,21 @@
 		    		if (parentApplication.currentASD != null && parentApplication.currentASD.swfData.compressed) {
 		    			if (this.HV.swfBytes.bytesAvailable == 0) {this.HV.swfBytes.position = 0};
 		    			this.HV.initViewer(parentApplication.currentASD.decompressSWF(this.HV.swfBytes));
-		    			this.hvSaveCompressed.enabled = true;
+		    			this.hvSaveZLIBCompressed.enabled = true;
+						this.hvSaveLZMACompressed.enabled = true;
 		    			this.hvFileTagButton.enabled = true;
 		    			this.hvFileTagList.enabled = true;
 		    		} else if (parentApplication.currentASD == null) {
 		    			this.hvViewCB.selectedIndex = 0;
-		    			this.hvSaveCompressed.enabled = false;
+		    			this.hvSaveZLIBCompressed.enabled = false;
+						this.hvSaveLZMACompressed.enabled = false;
 		    			this.hvFileTagButton.enabled = false;
 		    			this.hvFileTagList.enabled = false;
 		    			return;
 		    		}
 		    	} else {
-		    		this.hvSaveCompressed.enabled = false;
+		    		this.hvSaveZLIBCompressed.enabled = false;
+					this.hvSaveLZMACompressed.enabled = false;
 		    		this.hvFileTagButton.enabled = false;
 		    		this.hvFileTagList.enabled = false;
 		    		this.HV.initViewer(parentApplication.swfBytes);
@@ -320,7 +328,8 @@
 				</s:ArrayList>
 			</s:columns>
 		</s:DataGrid>
-		<s:Button x="515" y="561" label="Save" id="hvSave" click="this.HV.saveToFile()" />
-		<s:Button x="595" y="561" label="Save Compressed" id="hvSaveCompressed" click="this.HV.saveCompressed()"/>
+		<s:Button x="322" y="561" label="Save" id="hvSave" click="this.HV.saveToFile()" />
+		<s:Button x="411" y="561" label="Save ZLIB Compressed" id="hvSaveZLIBCompressed" click="this.HV.saveCompressed(CompressionAlgorithm.ZLIB)"/>
+		<s:Button x="580" y="561" label="Save LZMA Compressed" id="hvSaveLZMACompressed" click="this.HV.saveCompressed(CompressionAlgorithm.LZMA)"/>
 	</s:Group>
 </s:NavigatorContent>

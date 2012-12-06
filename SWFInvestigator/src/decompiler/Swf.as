@@ -60,9 +60,8 @@ package decompiler
 	import decompiler.tamarin.abcdump.Tag;
 	
 	import flash.utils.ByteArray;
+	import flash.utils.CompressionAlgorithm;
 	import flash.utils.Endian;
-
-	//import flash.utils.getDefinitionByName;
 	
 	public class Swf
 	{
@@ -132,7 +131,6 @@ package decompiler
 			} else if (header == "ZWS") {
 				this.compressionType = "LZMA";
 				this.compressed = true;
-				throw new SWFFormatError("LZMA will be supported in the next release.");
 			} else if (header != "FWS") {
 				throw new SWFFormatError("Incorrect SWF header");
 			}
@@ -143,17 +141,31 @@ package decompiler
 			if (this.compressed) {
 				var udata:ByteArray = new ByteArray;
 				udata.endian = "littleEndian";
-				//data.position = 8;
-				data.readBytes(udata,0,data.length-data.position);
-				var csize:uint;
 				
+				var csize:uint;
+
 				if (this.compressionType == "ZLIB") {
+					data.readBytes(udata,0,data.length-data.position);
 					csize = udata.length;
 					udata.uncompress();
 					this.log.print("decompressed swf " + csize + " -> " + udata.length + "\r");
 				} else if ( this.compressionType == "LZMA") {
-					csize = udata.readUnsignedInt();
-					//TO DO
+					//read compressed size
+					csize = data.readUnsignedInt();
+					
+					//Read LZMA Props byte and dictionary info
+					data.readBytes(udata,0,5);
+					udata.position = 5;
+	
+					//write decompressed size as 64-bit int
+					udata.writeUnsignedInt(this.length-8);
+					udata.writeUnsignedInt(0);
+					
+					//Append compressed data
+					data.readBytes(udata,13,csize);
+					//this.log.print("csize: " + csize + " udata length: " + udata.length);
+					udata.position = 0;
+					udata.uncompress(CompressionAlgorithm.LZMA);
 					this.log.print("decompressed swf " + csize + " -> "+ udata.length + "\r");
 				}
 				udata.position = 0;
@@ -211,7 +223,6 @@ package decompiler
 				tag.tName = tagNames[type];
 				tag.size = length;
 
-				//var tValues:TagValues = new TagValues();
 				if (type == stagDoABC || type == stagDoABC2) {
 					this.avm2 = true;
 					data.position += tag.size;
@@ -270,7 +281,6 @@ package decompiler
 
 				this.log.print(tagNames[type]+" "+length+"b "+int(100*length/data.length)+"%" + "\r");
 
-				//data.position += tag.size;				
 			}
 		}
 		
@@ -300,11 +310,9 @@ package decompiler
 		
 		public function dumpABC():void {
 			var t1:Tag;
-			//var data2:ByteArray;
 			
 			if (this.tags[stagDoABC2] != null && this.tags[stagDoABC2].length > 0) {
 				for each (t1 in this.tags[stagDoABC2]) {
-						//var pos1:int = t1.position;
 						var bLength:uint = t1.size;
 						this.data.position = t1.position;
 						data.readUnsignedShort(); //consume tag
@@ -511,7 +519,6 @@ package decompiler
 			}
 						
 			try {
-				//var classReference:Class = getDefinitionByName("decompiler.swfdump.tags." + tagName) as Class;
 				if (tag.longRecordHeader) {
 					data.position = tag.position + 6;
 				} else {
@@ -539,7 +546,6 @@ package decompiler
 						tDecoder.setDictionary(this.dict);
 						tDecoder.setHandler(sPrinter);
 						params[0] = tag.size;
-						//var t:* = tDecoder["decode" + tagName].apply(tDecoder,params);
 						tag.theTag = tDecoder.decodeTag(tag.type, tag.size);
 					}
 					if (dumpFile) {
@@ -590,7 +596,6 @@ package decompiler
 		public function readLengthString():String //throws IOException
 		{
 			var length:int = readUI8();
-			//byte[] b = new byte[length];
 			var b:ByteArray = new ByteArray();
 			b.length = length;
 			readFully(b);
@@ -708,7 +713,6 @@ package decompiler
 					bitPos -= bitsLeft;
 					bitBuf &= 0xff >> (8 - bitPos); // mask off the consumed bits
 					
-					//                if (print) System.out.println("  read"+numBits+" " + result);
 					return result;
 				}
 			}

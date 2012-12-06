@@ -1,9 +1,9 @@
 Adobe SWF Investigator Beta build notes
 
 Requirements:
-   Flash Builder 4.5 or later
-   Adobe Flex SDK 4.6 or later
-   AIR 3.1 or later
+   Flash Builder 4.6
+   Adobe Flex SDK 4.6 with the AIR 3.4 SDK. You can download a merged copy from: http://download.macromedia.com/pub/gaming/flex_sdk_4.6.0.23201.zip
+   AIR 3.4 or later
 
 Setting up Flash Builder:
    1. Create a new Flash Builder workspace.
@@ -19,7 +19,11 @@ Setting up Flash Builder:
       Finally set framework linkage to its default (external).
       Once you resolve the warnings, the project will build the swc files for the bin directory.
 
-   4. Build the overall application using the SWFInvestigator project.
+   4. Right click on the SWF Investigator project and select Properties.
+      Select Flex Compiler and verify that the default SDK is set to Flex 4.6.0 (build 23201).
+      If not, then click Configure Flex SDKs to specify the location of that SDK and make it the default.
+
+   5. Build the overall application using the SWFInvestigator project.
       The project should build cleanly.
       You can export as either an AIR application or Native Application.
       Versions compiled as an AIR application cannot support native disassemblers.

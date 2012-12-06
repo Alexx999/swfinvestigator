@@ -2,7 +2,7 @@
 <s:Window xmlns:fx="http://ns.adobe.com/mxml/2009"
 		  xmlns:s="library://ns.adobe.com/flex/spark"
 		  xmlns:mx="library://ns.adobe.com/flex/mx"
-		  width="770" height="662" backgroundColor="#FFFFFF" showStatusBar="false" title="Binary Editor">
+		  width="770" height="688" backgroundColor="#FFFFFF" showStatusBar="false" title="Binary Editor">
 	<fx:Script>
 		<![CDATA[
 			/****************************************************************************
@@ -107,7 +107,7 @@
 			 * Compress all the data in the byte array and re-display
 			 */
 			private function compressData():void {
-				this.HV.swfBytes.compress();
+				this.HV.swfBytes.compress(this.compressType.selectedValue.toString());
 				this.HV.initViewer(this.swfBytes);
 				HV.updateHexArray();
 			}
@@ -118,7 +118,7 @@
 			 */
 			private function uncompressData():void {
 				try {
-					this.HV.swfBytes.uncompress();
+					this.HV.swfBytes.uncompress(this.compressType.selectedValue.toString());
 					this.HV.initViewer(this.swfBytes);
 					HV.updateHexArray();
 				} catch (e:Error) {
@@ -325,6 +325,9 @@
 			
 		]]>
 	</fx:Script>
+	<fx:Declarations>
+		<s:RadioButtonGroup id="compressType"/>
+	</fx:Declarations>
 
 	<s:Label x="16" y="24" text="Source data" width="145"/>
 	<s:Label x="483" y="15" width="265" id="errorBox" height="31" color="#FE0909"/>
@@ -367,11 +370,16 @@
 			</s:ArrayList>
 		</s:columns>
 	</s:DataGrid>
-	<s:Button x="24" y="617" label="Switch Endian" width="108" click="switchEndian()"/>
-	<s:Button x="667.95" y="617" label="Save" id="hvSave" click="this.HV.saveToFile()" />
-	<s:Button x="140" y="617" label="Compress" width="99" click="compressData()"/>
-	<s:Button x="246" y="617" label="Uncompress" width="98" click="uncompressData()"/>
-	<s:TextInput x="448" y="617" id="xorValue" width="90" toolTip="Hex values should be provided as 0x00. Integers as text are also allowed."/>
-	<s:Button x="543" y="617" label="XOR" click="xorData()" width="46"/>
-	<s:Label x="380" y="622" text="XOR Value:"/>
+	<s:Button x="11" y="614" label="Switch Endian" width="108" click="switchEndian()"/>
+	<s:Label x="15" y="649" text="XOR Value:"/>
+	<s:TextInput x="83" y="644" id="xorValue" width="90" toolTip="Hex values should be provided as 0x00. Integers as text are also allowed."/>
+	<s:Button x="178" y="644" label="XOR" click="xorData()" width="46"/>
+	<s:HGroup x="329" y="620" width="174" height="18">
+		<s:RadioButton id="zlib" label="ZLIB" value="zlib" group="{compressType}" selected="true"/>
+		<s:RadioButton id="lzma" label="LZMA" value="lzma" group="{compressType}"/>
+		<s:RadioButton id="deflate" label="Deflate" value="deflate" group="{compressType}"/>
+	</s:HGroup>
+	<s:Button x="329" y="646" label="Compress" width="99" click="compressData()"/>
+	<s:Button x="435" y="646" label="Uncompress" width="98" click="uncompressData()"/>
+	<s:Button x="649.95" y="617" label="Save To File" id="hvSave" click="this.HV.saveToFile()" />
 </s:Window>
