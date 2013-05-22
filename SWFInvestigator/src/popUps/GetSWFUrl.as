@@ -91,7 +91,7 @@ package popUps
 
                 this.panel = new Panel();
                 this.panel.title = "Open URL";
-                this.panel.width = 340;
+                this.panel.width = 600;
                 this.panel.height = 140;
                 this.panel.addElement(vb);
 				this.panel.controlBarContent = cb;

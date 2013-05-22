@@ -1908,6 +1908,35 @@ package decompiler.swfdump.tools
 			closeTag(tag);
 
 		}
+		
+		public override function startSound2(tag:StartSound2):void
+		{
+			open(tag);
+			out.print(" soundClassName='" + tag.soundClassName + "'");
+			printSoundInfo(tag.soundInfo);
+			closeTag(tag);
+		}
+		
+		//I could possibly replace this with toString(16)
+		private function toBase16(input:ByteArray):String
+		{
+			var output:String = new String;
+			const hex:String = "0123456789abcdef";
+			const length:int = input.length;
+			for(var i:int = 0; i < length; i++) {
+				output += hex.charAt((input[i] & 0xF0) >> 4);
+				output += hex.charAt(input[i] & 0x0F);
+			}
+			return output;
+		}
+		
+		public override function enableTelemetry(tag:EnableTelemetry):void
+		{
+			open(tag);
+			out.print(" reserved='" + tag.reserved + "'");
+			out.print(" passwordHash='" + toBase16(tag.passwordHash) + "'");
+			close();
+		}
 
 	}
 }

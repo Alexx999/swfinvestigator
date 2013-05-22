@@ -11,9 +11,7 @@
 
 package decompiler.swfdump
 {
-	
-	//Note to self:  Commented out dict.add calls because I haven't implemented the Dictionary yet
-	
+		
 	import decompiler.Swf;
 	import decompiler.swfdump.SWFFormatError;
 	import decompiler.swfdump.tags.*;
@@ -339,6 +337,12 @@ package decompiler.swfdump
 					break;
 				case stagDefineBitsJPEG4:
 					t = decodeDefineJPEG4(length);
+					break;
+				case stagStartSound2:
+					t = decodeStartSound2();
+					break;
+				case stagEnableTelemetry:
+					t = decodeEnableTelemetry(length);
 					break;
 				/**
 				 * Used by certain obfuscation tools
@@ -2241,6 +2245,15 @@ package decompiler.swfdump
 			return t;
 		}
 		
+		private function decodeStartSound2():Tag // throws IOException
+		{
+			var t:StartSound2;
+			t = new StartSound2();
+			t.soundClassName = r.readString();
+			t.soundInfo = decodeSoundInfo();
+			return t;
+		}
+		
 		private function decodeSoundInfo():SoundInfo // throws IOException
 		{
 			var i:SoundInfo = new SoundInfo();
@@ -2837,6 +2850,21 @@ package decompiler.swfdump
 			tag.copyright = r.readString();
 			return tag;
 		}
+		
+		private function decodeEnableTelemetry(length:uint):Tag
+		{
+			var tag:EnableTelemetry = new EnableTelemetry();
+			r.syncBits();
+			tag.reserved = r.readUBits(16); // read reserved value
+			tag.passwordHash = new ByteArray();
+			if (length > 2) {
+				for (var i:int=0; i<32; i++) {
+					tag.passwordHash.writeByte(r.readUI8());
+				}
+			}
+			return(tag);
+		}
+
 
 		private function decodeRect():Rect // throws IOException
 		{

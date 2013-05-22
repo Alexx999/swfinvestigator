@@ -53,7 +53,8 @@
 			 * Expected format is "12345678, 87654321"
 			 */
 			private function convertToHex():void {
-				var rexp:RegExp = /^[0-9\, ]+$/g;
+				var rexp:RegExp = /^[0-9\, \-]+$/g;
+				this.errorBox.text = "";
 				if (!rexp.test(this.sourceText.text)) {
 					this.errorBox.text = "String contains invalid characters";
 					return;

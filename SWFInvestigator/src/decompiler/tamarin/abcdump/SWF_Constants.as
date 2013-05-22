@@ -119,8 +119,9 @@ internal var tagNames:Array = [
 	"DefineSceneAndFrameLabelData",			// 86
 	"DefineBinaryData",		// 87
 	"DefineFontName",		// 88
-	"89 (invalid)",			// 89
+	"StartSound2",			// 89
 	"90 (invalid)",			// 90
 	"DefineFont4",			// 91
-	"(invalid)"				// 92
+	"92 (invalid)",			// 92
+	"EnableTelemetry"		// 93
 ]

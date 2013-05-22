@@ -195,7 +195,7 @@
 				
 				var roOp:AbstractOperation =  ro.getOperation(this.roFunction.text);
 				
-				roOp.send(params[0]);
+				roOp.send.apply(null,params);
 
 			}
 			

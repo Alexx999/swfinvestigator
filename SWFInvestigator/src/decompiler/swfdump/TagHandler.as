@@ -267,6 +267,14 @@ package decompiler.swfdump
 		{
 		}
 		
+		public function enableTelemetry(tag:EnableTelemetry):void
+		{
+		}
+		
+		public function startSound2(tag:StartSound2):void
+		{
+		}
+		
 		public function unknown(tag:GenericTag):void
 		{
 		}

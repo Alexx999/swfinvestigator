@@ -154,7 +154,8 @@ package decompiler.tamarin.abcdump
 					{
 						case OP_debugfile:
 						case OP_pushstring:
-							s += '"' + abc.strings[readU32()].replace(/\n/g,"\\n").replace(/\t/g,"\\t") + '"';
+							nameIndex = readU32();
+							s += '"' + abc.strings[nameIndex].replace(/\n/g,"\\n").replace(/\t/g,"\\t") + '"  //stringIndex = ' + nameIndex;
 							break
 						case OP_pushnamespace:
 							s += abc.namespaces[readU32()];

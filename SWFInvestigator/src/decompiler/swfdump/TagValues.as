@@ -70,7 +70,8 @@ package decompiler.swfdump
 		//public static const stagMoveObject:int			= 34;	// OBSOLETE
 		public static const stagDefineBitsJPEG3:int			= 35;	// A JPEG bitmap with alpha info.
 		public static const stagDefineBitsLossless2:int		= 36;	// A lossless bitmap with alpha info.
-		public static const stagDefineButtonCxform2:int	= 37;	// OBSOLETE...a button color transform with alpha info
+		//Commented out by SWF Investigator because spec formally defines 37 as DefineEditText defined below.
+		//public static const stagDefineButtonCxform2:int	= 37;	// OBSOLETE...a button color transform with alpha info
 		
 		public static const stagDefineMouseTarget:int	= 38;	// define a sequence of tags that describe the behavior -- Originally commented out Si
 		public static const stagDefineSprite:int			= 39;	// Define a sequence of tags that describe the behavior of a sprite.
@@ -152,7 +153,11 @@ package decompiler.swfdump
 		// NOTE: If tag values exceed 255 we need to expand SCharacter::tagCode from a BYTE to a WORD
 		
 		//Added by SWF Investigator
+		public static const stagStartSound2:int			    = 89;   //StartSound2.
+		
 		public static const stagDefineBitsJPEG4:int			= 90;	// A JPEG bitmap with alpha info.
+		
+		public static const stagEnableTelemetry:int			= 93;	//Enable Telemetry. New in spec version 19
 		
 		public static const stagObfuscation:int				= 253;
 		

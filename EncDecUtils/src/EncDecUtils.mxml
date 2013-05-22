@@ -105,7 +105,7 @@
 		private function onSHA1():void
 		{
 			var buffer:ByteArray = new ByteArray;
-			buffer.writeUTF(dataText.text);
+			buffer.writeUTFBytes(dataText.text);
 			var hdl:uint = as3_crypto_wrapper.sha1_begin();
 			as3_crypto_wrapper.sha1_update(hdl, buffer);
 			var digest:ByteArray = as3_crypto_wrapper.sha1_finish(hdl);
@@ -117,7 +117,7 @@
 		private function onSHA256():void
 		{
 			var buffer:ByteArray = new ByteArray;
-			buffer.writeUTF(dataText.text);
+			buffer.writeUTFBytes(dataText.text);
 			var hdl:uint = as3_crypto_wrapper.sha256_begin();
 			as3_crypto_wrapper.sha256_update(hdl, buffer);
 			var digest:ByteArray = as3_crypto_wrapper.sha256_finish(hdl);
@@ -129,7 +129,7 @@
 		private function onMD5():void
 		{
 			var buffer:ByteArray = new ByteArray;
-			buffer.writeUTF(dataText.text);
+			buffer.writeUTFBytes(dataText.text);
 			var hdl:uint = as3_crypto_wrapper.md5_begin();
 			as3_crypto_wrapper.md5_update(hdl, buffer);
 			var digest:ByteArray = as3_crypto_wrapper.md5_finish(hdl);

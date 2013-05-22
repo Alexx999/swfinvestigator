@@ -512,7 +512,7 @@ package decompiler
 			
 			sPrinter.setDecoderDictionary(this.dict);
 			
-			if (tag.type < 92) {
+			if (tag.type < 94) {
 				tagName = tagNames[tag.type];
 			} else {
 				tagName = "Obfuscated";
