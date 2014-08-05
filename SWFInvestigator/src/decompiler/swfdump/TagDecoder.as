@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////////////
+﻿////////////////////////////////////////////////////////////////////////////////
 //
 //  ADOBE SYSTEMS INCORPORATED
 //  Copyright 2003-2006 Adobe Systems Incorporated
@@ -271,10 +271,10 @@ package decompiler.swfdump
 					t = decodeDefineMorphShape2();
 					break;
 				case stagDefineFont2:
-					t = decodeDefineFont2();
+					t = decodeDefineFont2(length);
 					break;
 				case stagDefineFont3:
-					t = decodeDefineFont3();
+					t = decodeDefineFont3(length);
 					break;
 				case stagDefineFont4:
 					t = decodeDefineFont4(length);
@@ -796,20 +796,22 @@ package decompiler.swfdump
 			return t;
 		}
 		
-		private function decodeDefineFont2():Tag //throws IOException
+		private function decodeDefineFont2(length:int):Tag //throws IOException
 		{
 			var t:DefineFont2 = new DefineFont2();
-			return decodeDefineFont2And3(t);
+			return decodeDefineFont2And3(t, length);
 		}
 		
-		private function decodeDefineFont3():Tag //throws IOException
+		private function decodeDefineFont3(length:int):Tag //throws IOException
 		{
 			var t:DefineFont3 = new DefineFont3();
-			return decodeDefineFont2And3(t);
+			return decodeDefineFont2And3(t, length);
 		}
 		
-		private function decodeDefineFont2And3(t:DefineFont2):Tag //throws IOException
+		private function decodeDefineFont2And3(t:DefineFont2, length:int):Tag //throws IOException
 		{
+			
+			var pos:int = r.getOffset();
 			var i:int;
 			var id:int = r.readUI16();
 			
@@ -850,16 +852,17 @@ package decompiler.swfdump
 			
 			var codeTableOffset:uint = 0;
 			
+			length -= r.getOffset() - pos;
 
 			//Commented out by SWF Investigator
 			//I think the numGlyphs check was a misinterpretation of the spec
-			//if (numGlyphs > 0)
-			//{
+			if (numGlyphs > 0 || length > 0)
+			{
 				if (t.wideOffsets)
 					codeTableOffset = r.readUI32();
 				else
 					codeTableOffset = r.readUI16();
-			//}			
+			}			
 
 			t.glyphShapeTable = new Vector.<Shape>(numGlyphs);
 			
