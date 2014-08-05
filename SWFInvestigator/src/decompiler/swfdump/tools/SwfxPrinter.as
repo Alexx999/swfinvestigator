@@ -1700,6 +1700,7 @@ package decompiler.swfdump.tools
 			
 			//Iterator it = tag.class2tag.entrySet().iterator();
 			//while (it.hasNext())
+			var arr:Array = new Array();
 			for (var e:* in tag.class2tag)
 			{
 				//Map.Entry e = (Map.Entry)it.next();
@@ -1710,14 +1711,21 @@ package decompiler.swfdump.tools
 					//Try looking it up a second time...
 					ref = dict.getTagByID(tag.class2idref[e]);
 				}
-				indent();
-				out.print("<Symbol idref='" + dict.getId(ref) + "' className='" + className + "' />\r");
+				arr.push( { key:dict.getId(ref), value:className } );
 			}
+			
+			arr.sortOn("key", Array.NUMERIC);
 			
 			if (tag.topLevelClass != null)
 			{
 				indent();
 				out.print("<Symbol idref='0' className='" + tag.topLevelClass + "' />\r");
+			}
+			
+			for each (var kvp:Object in arr) 
+			{
+				indent();
+				out.print("<Symbol idref='" + kvp.key + "' className='" + kvp.value + "' />\r");
 			}
 				
 			closeTag(tag);
