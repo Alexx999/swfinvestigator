@@ -1611,6 +1611,7 @@ package decompiler.swfdump
 			// old school button actions only handle one possible transition
 			var consumed:int = r.getOffset()-startPos;
 			t.condActions = new Vector.<ButtonCondAction>(1);
+			t.condActions[0] = new ButtonCondAction();
 			t.condActions[0].overDownToOverUp = true;
 			var actionDecoder:ActionDecoder = new ActionDecoder(r,null);
 			actionDecoder.setKeepOffsets(keepOffsets);
