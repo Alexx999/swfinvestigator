@@ -44,10 +44,16 @@ package decompiler.tamarin.abcdump
 		public function toString():String 
 		{
 			var last:String;
-			var s:String = last = '['+name+'(';
-			var n:*;
-			for (n in this)
-				s = (last = s + n + "=" + '"' + this[n] + '"') + ',';
+			var s:String = last = '[' + name+'(';
+			var values:Array = new Array();
+			for (var n:* in this) {
+				values.push( { key:n, value:this[n] } );
+			}
+			values.sortOn("key");
+			for each (var keyval:Object in values)
+			{
+				s = (last = s + keyval.key + "=" + '"' + keyval.value + '"') + ',';
+			}
 			return last + ')]';
 		}
 	}
